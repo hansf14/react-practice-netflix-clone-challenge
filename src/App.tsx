@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, MotionProps, Variant, Variants } from "motion/react";
 import { useState } from "react";
 import { createGlobalStyle, styled } from "styled-components";
 // import reactLogo from "./assets/react.svg";
