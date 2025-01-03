@@ -92,56 +92,76 @@ const Wrapper = styled(motion.div)`
   justify-content: center;
   align-items: center;
   background: linear-gradient(135deg, #e09, #d0e);
+  flex-direction: column;
 `;
 
 const Box = styled(motion.div)`
+  position: absolute;
+  top: 100px;
+
   width: 400px;
   height: 200px;
   background-color: rgba(255, 255, 255, 1);
   border-radius: 40px;
-  position: absolute;
-  top: 100px;
   box-shadow:
     0 2px 3px rgba(0, 0, 0, 0.1),
     0 10px 20px rgba(0, 0, 0, 0.06);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 28px;
 `;
 
 const boxVariants: Variants = {
-  initial: {
+  invisible: {
+    x: 500,
     opacity: 0,
     scale: 0,
   },
   visible: {
+    x: 0,
     opacity: 1,
     scale: 1,
-    rotateZ: 360,
+    transition: {
+      duration: 1,
+    },
   },
-  leaving: {
+  exit: {
+    x: -500,
     opacity: 0,
     scale: 0,
-    y: 50,
+    transition: {
+      duration: 1,
+    },
   },
 };
 
 function App() {
-  const [stateIsShowing, setStateIsShowing] = useState(false);
-  const toggleIsShowing = () => setStateIsShowing((cur) => !cur);
+  const [stateVisible, setStateVisible] = useState(1);
+  const setPrev = () => setStateVisible((cur) => (cur === 1 ? 10 : cur - 1));
+  const setNext = () => setStateVisible((cur) => (cur === 10 ? 1 : cur + 1));
 
   return (
     <>
       <GlobalStyle />
       <Wrapper>
-        <button onClick={toggleIsShowing}>Click</button>
         <AnimatePresence>
-          {stateIsShowing && (
-            <Box
-              variants={boxVariants}
-              initial="initial"
-              animate="visible"
-              exit="leaving"
-            />
+          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) =>
+            n == stateVisible ? (
+              <Box
+                key={n}
+                variants={boxVariants}
+                initial="invisible"
+                animate="visible"
+                exit="exit"
+              >
+                {n}
+              </Box>
+            ) : null,
           )}
         </AnimatePresence>
+        <button onClick={setPrev}>Prev</button>
+        <button onClick={setNext}>Next</button>
       </Wrapper>
     </>
   );
