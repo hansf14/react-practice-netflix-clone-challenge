@@ -1,12 +1,4 @@
-import {
-  AnimatePresence,
-  motion,
-  useMotionValue,
-  useMotionValueEvent,
-  useScroll,
-  useTransform,
-  Variants,
-} from "motion/react";
+import { AnimatePresence, motion, Variants } from "motion/react";
 import { useEffect, useState } from "react";
 import { createGlobalStyle, styled } from "styled-components";
 // import reactLogo from "./assets/react.svg";
@@ -96,29 +88,28 @@ const Wrapper = styled(motion.div)`
 `;
 
 const Box = styled(motion.div)`
-  position: absolute;
-  top: 100px;
-
   width: 400px;
-  height: 200px;
+  height: 400px;
   background-color: rgba(255, 255, 255, 1);
   border-radius: 40px;
   box-shadow:
     0 2px 3px rgba(0, 0, 0, 0.1),
     0 10px 20px rgba(0, 0, 0, 0.06);
+
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 28px;
 `;
 
 const boxVariants: Variants = {
-  invisible: {
-    x: 500,
-    opacity: 0,
-    scale: 0,
+  initial: (isBackward: boolean) => {
+    return {
+      x: isBackward ? -500 : 500,
+      opacity: 0,
+      scale: 0,
+    };
   },
-  visible: {
+  enter: {
     x: 0,
     opacity: 1,
     scale: 1,
@@ -126,39 +117,49 @@ const boxVariants: Variants = {
       duration: 1,
     },
   },
-  exit: {
-    x: -500,
-    opacity: 0,
-    scale: 0,
-    transition: {
-      duration: 1,
-    },
+  exit: (isBackward: boolean) => {
+    return {
+      x: isBackward ? 500 : -500,
+      opacity: 0,
+      scale: 0,
+      transition: {
+        duration: 1,
+      },
+    };
   },
 };
 
 function App() {
   const [stateVisible, setStateVisible] = useState(1);
-  const setPrev = () => setStateVisible((cur) => (cur === 1 ? 10 : cur - 1));
-  const setNext = () => setStateVisible((cur) => (cur === 10 ? 1 : cur + 1));
+  const [stateIsBackward, setStateIsBackward] = useState(false);
+
+  const setPrev = async () => {
+    setStateIsBackward(true);
+    setStateVisible((cur) => (cur === 1 ? 10 : cur - 1));
+  };
+  const setNext = async () => {
+    setStateIsBackward(false);
+    setStateVisible((cur) => (cur === 10 ? 1 : cur + 1));
+  };
+
+  console.log(stateVisible);
 
   return (
     <>
       <GlobalStyle />
       <Wrapper>
-        <AnimatePresence>
-          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) =>
-            n == stateVisible ? (
-              <Box
-                key={n}
-                variants={boxVariants}
-                initial="invisible"
-                animate="visible"
-                exit="exit"
-              >
-                {n}
-              </Box>
-            ) : null,
-          )}
+        <AnimatePresence custom={stateIsBackward} initial={false}>
+          <Box
+            key={Math.random()}
+            // key={stateVisible}
+            variants={boxVariants}
+            initial="initial"
+            animate="enter"
+            exit="exit"
+            custom={stateIsBackward}
+          >
+            {stateVisible}
+          </Box>
         </AnimatePresence>
         <button onClick={setPrev}>Prev</button>
         <button onClick={setNext}>Next</button>
