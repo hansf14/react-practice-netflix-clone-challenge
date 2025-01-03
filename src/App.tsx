@@ -101,68 +101,33 @@ const Box = styled(motion.div)`
   align-items: center;
 `;
 
-const boxVariants: Variants = {
-  initial: (isBackward: boolean) => {
-    return {
-      x: isBackward ? -500 : 500,
-      opacity: 0,
-      scale: 0,
-    };
-  },
-  enter: {
-    x: 0,
-    opacity: 1,
-    scale: 1,
-    transition: {
-      duration: 1,
-    },
-  },
-  exit: (isBackward: boolean) => {
-    return {
-      x: isBackward ? 500 : -500,
-      opacity: 0,
-      scale: 0,
-      transition: {
-        duration: 1,
-      },
-    };
-  },
-};
+const Circle = styled(motion.div)`
+  width: 100px;
+  height: 100px;
+  background-color: #00a5ff;
+  border-radius: 50px;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.1),
+    0 10px 20px rgba(0, 0, 0, 0.06);
+`;
 
 function App() {
-  const [stateVisible, setStateVisible] = useState(1);
-  const [stateIsBackward, setStateIsBackward] = useState(false);
-
-  const setPrev = async () => {
-    setStateIsBackward(true);
-    setStateVisible((cur) => (cur === 1 ? 10 : cur - 1));
-  };
-  const setNext = async () => {
-    setStateIsBackward(false);
-    setStateVisible((cur) => (cur === 10 ? 1 : cur + 1));
-  };
-
-  console.log(stateVisible);
-
+  const [stateIsClicked, setStateIsClicked] = useState(false);
+  const toggleIsClicked = () => setStateIsClicked((cur) => !cur);
   return (
     <>
       <GlobalStyle />
-      <Wrapper>
-        <AnimatePresence custom={stateIsBackward} initial={false}>
-          <Box
-            key={Math.random()}
-            // key={stateVisible}
-            variants={boxVariants}
-            initial="initial"
-            animate="enter"
-            exit="exit"
-            custom={stateIsBackward}
-          >
-            {stateVisible}
-          </Box>
-        </AnimatePresence>
-        <button onClick={setPrev}>Prev</button>
-        <button onClick={setNext}>Next</button>
+      <Wrapper onClick={toggleIsClicked}>
+        <Box>
+          {!stateIsClicked ? (
+            <Circle layoutId="circle" style={{ borderRadius: 50 }} />
+          ) : null}
+        </Box>
+        <Box>
+          {stateIsClicked ? (
+            <Circle layoutId="circle" style={{ borderRadius: 0, scale: 2 }} />
+          ) : null}
+        </Box>
       </Wrapper>
     </>
   );
