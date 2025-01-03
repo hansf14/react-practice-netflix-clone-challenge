@@ -1,6 +1,6 @@
-import { AnimatePresence, motion, MotionProps, Variant, Variants } from "motion/react";
-import { useState } from "react";
-import { createGlobalStyle, styled } from "styled-components";
+import { theme01 } from "@/theme";
+import { Helmet } from "react-helmet-async";
+import { styled, ThemeProvider, createGlobalStyle } from "styled-components";
 // import reactLogo from "./assets/react.svg";
 // import viteLogo from "/vite.svg";
 
@@ -69,96 +69,40 @@ const GlobalStyle = createGlobalStyle`
     color-scheme: only light;
   }
   
-  body {
-    font-weight: 300;
-    font-family: 'Source Sans Pro', sans-serif;
-    color:black;
-    line-height: 1.2;
+  html {
+    font-family: "Source Sans 3", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-style: normal;
+    word-break: break-word;
   }
 `;
 
-const Wrapper = styled(motion.div)`
-  height: 100vh;
-  width: 100vw;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  background: linear-gradient(135deg, #e09, #d0e);
-`;
-
-const Grid = styled.div`
-  width: 50vw;
-  gap: 10px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-
-  div: first-child,
-  div: last-child {
-    grid-column: span 2;
-  }
-`;
-
-const Box = styled(motion.div)`
-  height: 200px;
-  background-color: rgba(255, 255, 255, 1);
-  border-radius: 40px;
-  box-shadow:
-    0 2px 3px rgba(0, 0, 0, 0.1),
-    0 10px 20px rgba(0, 0, 0, 0.06);
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const Overlay = styled(motion.div)`
-  width: 100%;
+const Main = styled.main`
+  width: max-content;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  position: absolute;
 
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 10px;
 `;
-
-// const Circle = styled(motion.div)`
-//   width: 100px;
-//   height: 100px;
-//   background-color: #00a5ff;
-//   border-radius: 50px;
-//   box-shadow:
-//     0 2px 3px rgba(0, 0, 0, 0.1),
-//     0 10px 20px rgba(0, 0, 0, 0.06);
-// `;
 
 function App() {
-  const [stateId, setStateId] = useState<null | string>(null);
-
   return (
     <>
-      <GlobalStyle />
-      <Wrapper>
-        <Grid>
-          {Array.from({ length: 4 }, (_, index) => (index + 1).toString()).map(
-            (n) => (
-              <Box onClick={() => setStateId(n)} key={n} layoutId={n} />
-            ),
-          )}
-        </Grid>
-        <AnimatePresence>
-          {stateId ? (
-            <Overlay
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setStateId(null)}
-            >
-              <Box layoutId={stateId} style={{ width: 400, height: 200 }} />
-            </Overlay>
-          ) : null}
-        </AnimatePresence>
-      </Wrapper>
+      <ThemeProvider theme={theme01}>
+        <Helmet>
+          <link
+            href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap"
+            rel="stylesheet"
+          />
+        </Helmet>
+        <GlobalStyle />
+        <Main></Main>
+        {/* <ReactQueryDevtools initialIsOpen={true} /> */}
+      </ThemeProvider>
     </>
   );
 }

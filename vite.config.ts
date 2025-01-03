@@ -10,7 +10,7 @@ export default defineConfig({
       tsDecorators: true,
     }),
   ],
-  base: "/react-practice-motion-challenge",
+  base: "/react-practice-netflix-clone-challenge",
   server: {
     port: 3000,
   },
