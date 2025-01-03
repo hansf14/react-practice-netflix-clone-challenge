@@ -1,5 +1,5 @@
-import { AnimatePresence, motion, Variants } from "motion/react";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { useState } from "react";
 import { createGlobalStyle, styled } from "styled-components";
 // import reactLogo from "./assets/react.svg";
 // import viteLogo from "/vite.svg";
@@ -81,15 +81,25 @@ const Wrapper = styled(motion.div)`
   height: 100vh;
   width: 100vw;
   display: flex;
-  justify-content: center;
+  justify-content: space-around;
   align-items: center;
   background: linear-gradient(135deg, #e09, #d0e);
-  flex-direction: column;
+`;
+
+const Grid = styled.div`
+  width: 50vw;
+  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+  div: first-child,
+  div: last-child {
+    grid-column: span 2;
+  }
 `;
 
 const Box = styled(motion.div)`
-  width: 400px;
-  height: 400px;
+  height: 200px;
   background-color: rgba(255, 255, 255, 1);
   border-radius: 40px;
   box-shadow:
@@ -101,33 +111,53 @@ const Box = styled(motion.div)`
   align-items: center;
 `;
 
-const Circle = styled(motion.div)`
-  width: 100px;
-  height: 100px;
-  background-color: #00a5ff;
-  border-radius: 50px;
-  box-shadow:
-    0 2px 3px rgba(0, 0, 0, 0.1),
-    0 10px 20px rgba(0, 0, 0, 0.06);
+const Overlay = styled(motion.div)`
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  position: absolute;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;
 
+// const Circle = styled(motion.div)`
+//   width: 100px;
+//   height: 100px;
+//   background-color: #00a5ff;
+//   border-radius: 50px;
+//   box-shadow:
+//     0 2px 3px rgba(0, 0, 0, 0.1),
+//     0 10px 20px rgba(0, 0, 0, 0.06);
+// `;
+
 function App() {
-  const [stateIsClicked, setStateIsClicked] = useState(false);
-  const toggleIsClicked = () => setStateIsClicked((cur) => !cur);
+  const [stateId, setStateId] = useState<null | string>(null);
+
   return (
     <>
       <GlobalStyle />
-      <Wrapper onClick={toggleIsClicked}>
-        <Box>
-          {!stateIsClicked ? (
-            <Circle layoutId="circle" style={{ borderRadius: 50 }} />
+      <Wrapper>
+        <Grid>
+          {Array.from({ length: 4 }, (_, index) => (index + 1).toString()).map(
+            (n) => (
+              <Box onClick={() => setStateId(n)} key={n} layoutId={n} />
+            ),
+          )}
+        </Grid>
+        <AnimatePresence>
+          {stateId ? (
+            <Overlay
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setStateId(null)}
+            >
+              <Box layoutId={stateId} style={{ width: 400, height: 200 }} />
+            </Overlay>
           ) : null}
-        </Box>
-        <Box>
-          {stateIsClicked ? (
-            <Circle layoutId="circle" style={{ borderRadius: 0, scale: 2 }} />
-          ) : null}
-        </Box>
+        </AnimatePresence>
       </Wrapper>
     </>
   );
