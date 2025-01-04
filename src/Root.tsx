@@ -94,9 +94,11 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 const Layout = styled.main`
+  overflow-x: hidden;
   width: 100%;
   // height: 100%;
   height: 200vh;
+
   padding-top: ${({ theme }) => `${theme.headerNavBarHeight}px`};
   background-color: ${({ theme }) => theme.layoutBackground};
 

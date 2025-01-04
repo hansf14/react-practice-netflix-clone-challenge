@@ -87,16 +87,24 @@ const logoVariants: Variants = {
 const headerNavBarVariants: Variants = {
   top: {
     backgroundColor: "rgba(0, 0, 0, 1)",
+    transition: {
+      type: "tween",
+      duration: 1,
+    },
   },
   scroll: {
     backgroundColor: "rgba(0, 0, 0, 0)",
+    transition: {
+      type: "tween",
+      duration: 1,
+    },
   },
 };
 
 export const HeaderNavBar = () => {
   const tvPath = `${basePath}/tv`;
-  const isHomeMatch = useMatch(basePath);
-  const isTvMatch = useMatch(tvPath);
+  const homeMatch = useMatch(basePath);
+  const tvMatch = useMatch(tvPath);
 
   const headerNavBarAnimation = useAnimation();
 
@@ -141,7 +149,7 @@ export const HeaderNavBar = () => {
           <HeaderNavBarItem>
             <Link to={basePath}>
               Home
-              {isHomeMatch && (
+              {homeMatch && (
                 <HeaderNavBarItemCircle layoutId="HeaderNavBarItemCircle" />
               )}
             </Link>
@@ -149,7 +157,7 @@ export const HeaderNavBar = () => {
           <HeaderNavBarItem>
             <Link to={tvPath}>
               Tv Shows
-              {isTvMatch && (
+              {tvMatch && (
                 <HeaderNavBarItemCircle layoutId="HeaderNavBarItemCircle" />
               )}
             </Link>
