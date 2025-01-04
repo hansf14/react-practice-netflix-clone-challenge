@@ -1,6 +1,13 @@
 import { theme01 } from "@/theme";
-import { Helmet } from "react-helmet-async";
+import { Helmet, HelmetProvider } from "react-helmet-async";
 import { styled, ThemeProvider, createGlobalStyle } from "styled-components";
+import { Outlet } from "react-router-dom";
+import { queryClient } from "@/queryClient";
+import { QueryClientProvider } from "react-query";
+import { ReactQueryDevtools } from "react-query/devtools";
+import { HeaderNavBar } from "@/components/HeaderNavBar";
+// import { RecoilRoot } from "recoil";
+// import RecoilNexus from "recoil-nexus";
 // import reactLogo from "./assets/react.svg";
 // import viteLogo from "/vite.svg";
 
@@ -70,41 +77,59 @@ const GlobalStyle = createGlobalStyle`
   }
   
   html {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+
     font-family: "Source Sans 3", sans-serif;
     font-optical-sizing: auto;
-    font-weight: 500;
     font-style: normal;
     word-break: break-word;
   }
+  body,
+  #root {
+    width: 100%;
+    height: 100%;
+  }
 `;
 
-const Main = styled.main`
-  width: max-content;
-  height: 100%;
+const Layout = styled.main`
+  width: 100%;
+  // height: 100%;
+  height: 200vh;
+  padding-top: ${({ theme }) => `${theme.headerNavBarHeight}px`};
+  background-color: ${({ theme }) => theme.layoutBackground};
 
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
+  color: ${({ theme }) => theme.layoutFontColor01};
 `;
 
-function App() {
+function Root() {
+  // const { theme } = useThemeContext(lightTheme);
+  // console.log(theme);
+
   return (
-    <>
-      <ThemeProvider theme={theme01}>
+    <ThemeProvider theme={theme01}>
+      <GlobalStyle />
+      {/* <RecoilNexus /> */}
+      <HelmetProvider>
         <Helmet>
           <link
             href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap"
             rel="stylesheet"
           />
         </Helmet>
-        <GlobalStyle />
-        <Main></Main>
-        {/* <ReactQueryDevtools initialIsOpen={true} /> */}
-      </ThemeProvider>
-    </>
+        <QueryClientProvider client={queryClient}>
+          <Layout>
+            <HeaderNavBar />
+            <Outlet />
+          </Layout>
+          <ReactQueryDevtools initialIsOpen={false} />
+        </QueryClientProvider>
+      </HelmetProvider>
+    </ThemeProvider>
   );
 }
 
-export default App;
+export default Root;
