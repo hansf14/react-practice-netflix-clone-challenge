@@ -1,42 +1,40 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMatch, useNavigate } from "react-router-dom";
-import { AnimatePresence, motion, Variants } from "motion/react";
-import { useMedia } from "react-use";
+import { AnimatePresence, motion, useAnimation, Variants } from "motion/react";
+import { useMedia, useSize } from "react-use";
 import { css, styled } from "styled-components";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
 import { StyledComponentProps } from "@/utils";
 import { CaretLeftFill, CaretRightFill } from "react-bootstrap-icons";
 
 const CarouselBase = styled.div`
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  overflow: visible;
+  container-name: carousel-base;
+  container-type: inline-size;
 `;
 
-const CarouselContent = styled.div`
-  display: grid;
-
-  width: 80%;
-  @media (max-width: 1000px) {
-    & {
-      width: 100%;
-    }
-  }
+const CarouselRows = styled(motion.div)`
+  display: flex;
 `;
 
 export type RowProps = {
   itemCntPerRow: number;
 };
 
-const CarouselRow = styled(motion.div).withConfig({
+const CarouselRow = styled.div`
+  flex: 0 0 auto;
+  width: 80cqw;
+  margin: 0 10cqw;
+  @media (max-width: 1000px) {
+    & {
+      width: 100cqw;
+    }
+  }
+`;
+
+const CarouselRowContent = styled(motion.div).withConfig({
   shouldForwardProp: (prop) => !["itemCntPerRow"].includes(prop),
 })<RowProps>`
   transform-style: preserve-3d;
-
-  grid-column: 1;
-  grid-row: 1;
-  min-width: 0;
 
   display: grid;
   grid-template-columns: repeat(
@@ -47,6 +45,78 @@ const CarouselRow = styled(motion.div).withConfig({
   @media (max-width: 600px) {
     & {
       gap: 0;
+    }
+  }
+`;
+
+const CarouselItemBox = styled(motion.div)`
+  transform-style: preserve-3d;
+  position: relative;
+  min-width: 0;
+  width: 100%;
+
+  transform-origin: center bottom;
+  &:first-child {
+    transform-origin: left bottom;
+  }
+  &:last-child {
+    transform-origin: right bottom;
+  }
+
+  cursor: pointer;
+`;
+
+const cssCarouselItemPosterImage = css`
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+  height: 100%;
+`;
+
+const CarouselItemPoster = styled.div`
+  z-index: 100;
+  transform: translateZ(5px);
+  aspect-ratio: 2 / 3; // Prevent subpixel problem by setting the aspect ratio to the image intrinsic dimension.
+
+  display: flex;
+  align-items: center;
+
+  img {
+    ${cssCarouselItemPosterImage}
+  }
+`;
+
+const CarouselItemTooltipOverflowParentGuard = styled.div`
+  clip-path: inset(0px 0px -100vh 0px);
+`;
+
+const CarouselItemTooltip = styled(motion.div)`
+  z-index: 10;
+  transform: translateZ(3px);
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+
+  padding: 10px;
+  opacity: 0;
+  background-color: #eee;
+  color: #111;
+
+  @media (max-width: 500px) {
+    & {
+      padding: 10px 5px;
+    }
+  }
+`;
+
+const CarouselItemTooltipTitle = styled.h3`
+  text-align: center;
+
+  font-size: 14px;
+  @media (max-width: 500px) {
+    & {
+      font-size: 12px;
     }
   }
 `;
@@ -88,74 +158,6 @@ const CarouselControllerNumber = styled.div<CarouselControllerNumberProps>`
       font-weight: bold;
     `
       : "cursor: pointer;"}
-`;
-
-const CarouselItemBox = styled(motion.div)`
-  transform-style: preserve-3d;
-  position: relative;
-  min-width: 0;
-  width: 100%;
-
-  transform-origin: center bottom;
-  &:first-child {
-    transform-origin: left bottom;
-  }
-  &:last-child {
-    transform-origin: right bottom;
-  }
-
-  cursor: pointer;
-`;
-
-const cssCarouselItemPosterImage = css`
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: cover;
-  height: 100%;
-`;
-
-const CarouselItemPoster = styled.div`
-  z-index: 100;
-  transform: translateZ(5px);
-  aspect-ratio: 2 / 3; // Prevent subpixel problem by setting the aspect ratio to the image intrinsic dimension.
-
-  display: flex;
-  align-items: center;
-
-  img {
-    ${cssCarouselItemPosterImage}
-  }
-`;
-
-const CarouselItemTooltip = styled(motion.div)`
-  z-index: 10;
-  transform: translateZ(3px);
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-
-  padding: 10px;
-  opacity: 0;
-  background-color: #eee;
-  color: #111;
-
-  @media (max-width: 500px) {
-    & {
-      padding: 10px 5px;
-    }
-  }
-`;
-
-const CarouselItemTooltipTitle = styled.h3`
-  text-align: center;
-
-  font-size: 14px;
-  @media (max-width: 500px) {
-    & {
-      font-size: 12px;
-    }
-  }
 `;
 
 const ModalContent = styled(motion.div)`
@@ -205,20 +207,37 @@ type RowVariantsParams = {
   stepSize: number;
 };
 
-const rowVariants: Variants = {
-  hidden: ({ direction, stepSize }: RowVariantsParams) => {
-    return {
-      x: direction * stepSize * document.documentElement.clientWidth,
-    };
-  },
-  visible: { x: 0, transition: { type: "tween", duration: 1 } },
-  exit: ({ direction, stepSize }: RowVariantsParams) => {
-    return {
-      x: -direction * stepSize * document.documentElement.clientWidth,
-      transition: { type: "tween", duration: 1 },
-    };
-  },
+const rowContentVariants: Variants = {
+  initial: { x: 0 },
+  // animate: {x: }
+  // hidden: ({ direction, stepSize }: RowVariantsParams) => {
+  //   return {
+  //     x: direction * stepSize * document.documentElement.clientWidth,
+  //   };
+  // },
+  // visible: { x: 0, transition: { type: "tween", duration: 1 } },
+  // exit: ({ direction, stepSize }: RowVariantsParams) => {
+  //   return {
+  //     x: -direction * stepSize * document.documentElement.clientWidth,
+  //     transition: { type: "tween", duration: 1 },
+  //   };
+  // },
 };
+
+// const rowContentVariants: Variants = {
+//   hidden: ({ direction, stepSize }: RowVariantsParams) => {
+//     return {
+//       x: direction * stepSize * document.documentElement.clientWidth,
+//     };
+//   },
+//   visible: { x: 0, transition: { type: "tween", duration: 1 } },
+//   exit: ({ direction, stepSize }: RowVariantsParams) => {
+//     return {
+//       x: -direction * stepSize * document.documentElement.clientWidth,
+//       transition: { type: "tween", duration: 1 },
+//     };
+//   },
+// };
 
 const itemBoxVariants: Variants = {
   initial: {
@@ -273,31 +292,52 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     const totalCntItem = items.length;
     const maxRowIndex = Math.ceil(totalCntItem / itemCntPerRow) - 1;
 
-    const [stateDirection, setStateDirection] = useState<-1 | 0 | 1>(0);
-    const [stateStepSize, setStateStepSize] = useState<number>(0);
+    // const [stateDirection, setStateDirection] = useState<-1 | 0 | 1>(0);
+    // const [stateStepSize, setStateStepSize] = useState<number>(0);
+    // const refDirection = useRef<-1 | 0 | 1>(0);
+    // const refStepSize = useRef<number>(0);
+
+    const rowContentAnimation = useAnimation();
 
     const increaseCurrentRowIndex = useCallback(() => {
       if (stateIsExiting) {
         return;
       }
-      setStateDirection(1);
-      setStateStepSize(1);
-      setStateIsExiting(true);
-      setStateCurrentRowIndex((currentIndex) =>
-        currentIndex >= maxRowIndex ? 0 : currentIndex + 1,
-      );
-    }, [maxRowIndex, stateIsExiting]);
+      // setStateDirection(1);
+      // setStateStepSize(1);
+      // refDirection.current = 1;
+      // refStepSize.current = 1;
+
+      const nextRowIndex =
+        stateCurrentRowIndex >= maxRowIndex ? 0 : stateCurrentRowIndex + 1;
+
+      rowContentAnimation.start({
+        x: -nextRowIndex * document.documentElement.clientWidth,
+        transition: {
+          ease: "easeInOut",
+          duration: 0.5,
+        },
+      });
+      // setStateIsExiting(true);
+      setStateCurrentRowIndex(nextRowIndex);
+      // TODO: maxRowIndex -> 0 => direction: -1, stepSize: n - 1
+    }, [
+      stateCurrentRowIndex,
+      rowContentAnimation,
+      maxRowIndex,
+      stateIsExiting,
+    ]);
 
     const decreaseCurrentRowIndex = useCallback(() => {
       if (stateIsExiting) {
         return;
       }
-      setStateDirection(-1);
-      setStateStepSize(1);
-      setStateIsExiting(true);
-      setStateCurrentRowIndex((currentIndex) =>
-        currentIndex <= 0 ? maxRowIndex : currentIndex - 1,
-      );
+      // setStateDirection(-1);
+      // setStateStepSize(1);
+      // setStateIsExiting(true);
+      // setStateCurrentRowIndex((currentIndex) =>
+      //   currentIndex <= 0 ? maxRowIndex : currentIndex - 1,
+      // );
     }, [maxRowIndex, stateIsExiting]);
 
     const changeCurrentRowIndexTo = useCallback(
@@ -306,19 +346,19 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
           if (stateIsExiting) {
             return;
           }
-          if (indexTo === stateCurrentRowIndex) {
-            setStateDirection(0);
-            setStateStepSize(0);
-            return;
-          }
-          if (indexTo < 0 || indexTo > maxRowIndex) {
-            return;
-          }
+          // if (indexTo === stateCurrentRowIndex) {
+          //   setStateDirection(0);
+          //   setStateStepSize(0);
+          //   return;
+          // }
+          // if (indexTo < 0 || indexTo > maxRowIndex) {
+          //   return;
+          // }
 
-          setStateDirection(stateCurrentRowIndex < indexTo ? 1 : -1);
-          setStateStepSize(Math.abs(stateCurrentRowIndex - indexTo));
-          setStateIsExiting(true);
-          setStateCurrentRowIndex(indexTo);
+          // setStateDirection(stateCurrentRowIndex < indexTo ? 1 : -1);
+          // setStateStepSize(Math.abs(stateCurrentRowIndex - indexTo));
+          // setStateIsExiting(true);
+          // setStateCurrentRowIndex(indexTo);
         },
       [stateIsExiting, stateCurrentRowIndex, maxRowIndex],
     );
@@ -368,88 +408,110 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     return (
       <>
         <CarouselBase ref={ref} {...otherProps}>
-          <CarouselContent>
-            <AnimatePresence
+          {/* <AnimatePresence
               custom={{
                 direction: stateDirection,
                 stepSize: stateStepSize,
               }}
               initial={false}
               onExitComplete={onExitComplete}
-            >
-              <CarouselRow
-                key={stateCurrentRowIndex}
-                custom={{
-                  direction: stateDirection,
-                  stepSize: stateStepSize,
-                }}
-                variants={rowVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                itemCntPerRow={itemCntPerRow}
-              >
-                {items
-                  .slice(
-                    itemCntPerRow * stateCurrentRowIndex,
-                    itemCntPerRow * (stateCurrentRowIndex + 1),
-                  )
-                  .map((item, index) => {
-                    const movieIndex =
-                      itemCntPerRow * stateCurrentRowIndex + index;
-
-                    return (
-                      <CarouselItemBox
-                        key={item.id}
-                        layoutId={item.id.toString()}
-                        variants={itemBoxVariants}
-                        initial="initial"
-                        whileHover="hover"
-                        transition={{
-                          type: "tween",
-                        }}
-                        onClick={() =>
-                          onClickMovieBox({ movieId: item.id.toString() })
-                        }
-                      >
-                        <CarouselItemPoster>
-                          {images[movieIndex]}
-                        </CarouselItemPoster>
-                        <CarouselItemTooltip
-                          variants={itemTooltipVariants}
-                          transition={{
-                            type: "tween",
-                          }}
-                        >
-                          <CarouselItemTooltipTitle>
-                            {item.title}
-                          </CarouselItemTooltipTitle>
-                        </CarouselItemTooltip>
-                      </CarouselItemBox>
-                    );
-                  })}
-              </CarouselRow>
-            </AnimatePresence>
-            <CarouselControllers>
-              <CarouselControllerPrev onClick={decreaseCurrentRowIndex}>
-                <CaretLeftFill />
-              </CarouselControllerPrev>
-              {Array.from({ length: maxRowIndex + 1 }, (_, index) => {
-                const isActive = index === stateCurrentRowIndex;
-                return (
-                  <CarouselControllerNumber
-                    isActive={isActive}
-                    onClick={changeCurrentRowIndexTo({ indexTo: index })}
+            > */}
+          <CarouselRows
+            variants={rowContentVariants}
+            initial="initial"
+            animate={rowContentAnimation}
+            // animate="visible"
+            // exit="exit"
+            onAnimationComplete={(animationDefinition) => {
+              console.log(animationDefinition);
+              onExitComplete();
+            }}
+          >
+            {Array.from({ length: maxRowIndex + 1 }, (_, rowIndex) => {
+              return (
+                <CarouselRow>
+                  <CarouselRowContent
+                    key={rowIndex}
+                    itemCntPerRow={itemCntPerRow}
+                    // custom={{
+                    //   direction: stateDirection,
+                    //   stepSize: stateStepSize,
+                    // }}
+                    // variants={rowContentVariants}
+                    // initial="hidden"
+                    // animate={rowContentAnimation}
+                    // // animate="visible"
+                    // // exit="exit"
+                    // itemCntPerRow={itemCntPerRow}
+                    // onAnimationComplete={(animationDefinition) => {
+                    //   console.log(animationDefinition);
+                    //   onExitComplete();
+                    // }}
                   >
-                    {index + 1}
-                  </CarouselControllerNumber>
-                );
-              })}
-              <CarouselControllerNext onClick={increaseCurrentRowIndex}>
-                <CaretRightFill />
-              </CarouselControllerNext>
-            </CarouselControllers>
-          </CarouselContent>
+                    {items
+                      .slice(
+                        itemCntPerRow * rowIndex,
+                        itemCntPerRow * (rowIndex + 1),
+                      )
+                      .map((item, index) => {
+                        const movieIndex = itemCntPerRow * rowIndex + index;
+
+                        return (
+                          <CarouselItemBox
+                            key={item.id}
+                            layoutId={item.id.toString()}
+                            variants={itemBoxVariants}
+                            initial="initial"
+                            whileHover="hover"
+                            transition={{
+                              type: "tween",
+                            }}
+                            onClick={() =>
+                              onClickMovieBox({ movieId: item.id.toString() })
+                            }
+                          >
+                            <CarouselItemPoster>
+                              {images[movieIndex]}
+                            </CarouselItemPoster>
+                            <CarouselItemTooltipOverflowParentGuard>
+                              <CarouselItemTooltip
+                                variants={itemTooltipVariants}
+                                transition={{
+                                  type: "tween",
+                                }}
+                              >
+                                <CarouselItemTooltipTitle>
+                                  {item.title}
+                                </CarouselItemTooltipTitle>
+                              </CarouselItemTooltip>
+                            </CarouselItemTooltipOverflowParentGuard>
+                          </CarouselItemBox>
+                        );
+                      })}
+                  </CarouselRowContent>
+                </CarouselRow>
+              );
+            })}
+          </CarouselRows>
+          <CarouselControllers>
+            <CarouselControllerPrev onClick={decreaseCurrentRowIndex}>
+              <CaretLeftFill />
+            </CarouselControllerPrev>
+            {Array.from({ length: maxRowIndex + 1 }, (_, index) => {
+              const isActive = index === stateCurrentRowIndex;
+              return (
+                <CarouselControllerNumber
+                  isActive={isActive}
+                  onClick={changeCurrentRowIndexTo({ indexTo: index })}
+                >
+                  {index + 1}
+                </CarouselControllerNumber>
+              );
+            })}
+            <CarouselControllerNext onClick={increaseCurrentRowIndex}>
+              <CaretRightFill />
+            </CarouselControllerNext>
+          </CarouselControllers>
         </CarouselBase>
         <AnimatePresence>
           {!!pathMatch && (
