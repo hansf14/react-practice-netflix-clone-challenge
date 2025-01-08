@@ -265,10 +265,8 @@ export const HeaderNavBar = withMemoAndRef<
     const inputAnimation = useAnimation();
 
     const openSearchBoxHandler = useCallback(() => {
-      console.log("[openSearchBoxHandler]");
+      // console.log("[openSearchBoxHandler]");
 
-      // TODO: open at medium screen ++
-      // open modal at small screen
       setStateIsSearchBoxOpen(true);
 
       if (!isSmallerEqual600px) {

@@ -1,19 +1,31 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useMatch, useNavigate } from "react-router-dom";
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useMatch } from "react-router-dom";
 import { AnimatePresence, motion, useAnimation, Variants } from "motion/react";
-import { useMedia, useSize } from "react-use";
+import { useMedia } from "react-use";
 import { css, styled } from "styled-components";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
 import { StyledComponentProps } from "@/utils";
 import { CaretLeftFill, CaretRightFill } from "react-bootstrap-icons";
 
 const CarouselBase = styled.div`
+  width: 100%;
   container-name: carousel-base;
   container-type: inline-size;
+
+  display: flex;
+  flex-direction: column;
 `;
 
 const CarouselRows = styled(motion.div)`
   display: flex;
+  width: fit-content;
 `;
 
 export type RowProps = {
@@ -27,6 +39,7 @@ const CarouselRow = styled.div`
   @media (max-width: 1000px) {
     & {
       width: 100cqw;
+      margin: 0;
     }
   }
 `;
@@ -35,6 +48,7 @@ const CarouselRowContent = styled(motion.div).withConfig({
   shouldForwardProp: (prop) => !["itemCntPerRow"].includes(prop),
 })<RowProps>`
   transform-style: preserve-3d;
+  width: 100%;
 
   display: grid;
   grid-template-columns: repeat(
@@ -52,7 +66,6 @@ const CarouselRowContent = styled(motion.div).withConfig({
 const CarouselItemBox = styled(motion.div)`
   transform-style: preserve-3d;
   position: relative;
-  min-width: 0;
   width: 100%;
 
   transform-origin: center bottom;
@@ -122,8 +135,6 @@ const CarouselItemTooltipTitle = styled.h3`
 `;
 
 const CarouselControllers = styled.div`
-  grid-column: 1;
-  grid-row: 2;
   margin: 15px auto;
 
   display: flex;
@@ -184,7 +195,7 @@ const ModalOverlay = styled(motion.div)`
   opacity: 0;
 `;
 
-const SelectedMoviePoster = styled.div`
+const SelectedItemPoster = styled.div`
   width: 50%;
   aspect-ratio: 2 / 3;
   margin: 10px;
@@ -197,47 +208,14 @@ const SelectedMoviePoster = styled.div`
   }
 `;
 
-const SelectedMovieTitle = styled.h2`
+const SelectedItemTitle = styled.h2`
   font-size: 36px;
   text-align: center;
 `;
 
-type RowVariantsParams = {
-  direction: number;
-  stepSize: number;
-};
-
 const rowContentVariants: Variants = {
   initial: { x: 0 },
-  // animate: {x: }
-  // hidden: ({ direction, stepSize }: RowVariantsParams) => {
-  //   return {
-  //     x: direction * stepSize * document.documentElement.clientWidth,
-  //   };
-  // },
-  // visible: { x: 0, transition: { type: "tween", duration: 1 } },
-  // exit: ({ direction, stepSize }: RowVariantsParams) => {
-  //   return {
-  //     x: -direction * stepSize * document.documentElement.clientWidth,
-  //     transition: { type: "tween", duration: 1 },
-  //   };
-  // },
 };
-
-// const rowContentVariants: Variants = {
-//   hidden: ({ direction, stepSize }: RowVariantsParams) => {
-//     return {
-//       x: direction * stepSize * document.documentElement.clientWidth,
-//     };
-//   },
-//   visible: { x: 0, transition: { type: "tween", duration: 1 } },
-//   exit: ({ direction, stepSize }: RowVariantsParams) => {
-//     return {
-//       x: -direction * stepSize * document.documentElement.clientWidth,
-//       transition: { type: "tween", duration: 1 },
-//     };
-//   },
-// };
 
 const itemBoxVariants: Variants = {
   initial: {
@@ -267,47 +245,61 @@ const itemTooltipVariants: Variants = {
   },
 };
 
-type CarouselProps = {
-  items: {
-    id: string;
-    title: string;
-  }[];
-  images: React.ReactNode[];
+export type CarouselItem = {
+  id: string;
+  title: string;
+};
+
+export type CarouselImage = React.ReactNode;
+
+export type OnOpenItem = ({ id, title }: CarouselItem) => void;
+
+export type OnCloseItem = ({ id, title }: CarouselItem) => void;
+
+export type CarouselProps = {
+  items: CarouselItem[];
+  images: CarouselImage[];
   pathMatchPattern: string;
   pathMatchParam: string;
+  onOpenItem?: OnOpenItem;
+  onCloseItem?: OnCloseItem;
 } & StyledComponentProps<"div">;
 
 export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
   displayName: "Carousel",
   Component: (
-    { items, images, pathMatchPattern, pathMatchParam, ...otherProps },
+    {
+      items,
+      images,
+      pathMatchPattern,
+      pathMatchParam,
+      onOpenItem,
+      onCloseItem,
+      ...otherProps
+    },
     ref,
   ) => {
+    const refBase = useRef<HTMLDivElement | null>(null);
+    useImperativeHandle(ref, () => {
+      return refBase.current as HTMLDivElement;
+    });
+
     const isSmallerEqual600px = useMedia("(max-width: 600px)");
-    const itemCntPerRow = isSmallerEqual600px ? 4 : 5;
-
-    const [stateCurrentRowIndex, setStateCurrentRowIndex] = useState<number>(0);
-    const [stateIsExiting, setStateIsExiting] = useState<boolean>(false);
-
     const totalCntItem = items.length;
-    const maxRowIndex = Math.ceil(totalCntItem / itemCntPerRow) - 1;
 
-    // const [stateDirection, setStateDirection] = useState<-1 | 0 | 1>(0);
-    // const [stateStepSize, setStateStepSize] = useState<number>(0);
-    // const refDirection = useRef<-1 | 0 | 1>(0);
-    // const refStepSize = useRef<number>(0);
+    const itemCntPerRow = isSmallerEqual600px ? 4 : 5;
+    const maxRowIndex = Math.ceil(totalCntItem / itemCntPerRow) - 1;
+    const [stateCurrentRowIndex, setStateCurrentRowIndex] = useState<number>(0);
+
+    useEffect(() => {
+      if (stateCurrentRowIndex > maxRowIndex) {
+        setStateCurrentRowIndex(maxRowIndex);
+      }
+    }, [stateCurrentRowIndex, maxRowIndex]);
 
     const rowContentAnimation = useAnimation();
 
     const increaseCurrentRowIndex = useCallback(() => {
-      if (stateIsExiting) {
-        return;
-      }
-      // setStateDirection(1);
-      // setStateStepSize(1);
-      // refDirection.current = 1;
-      // refStepSize.current = 1;
-
       const nextRowIndex =
         stateCurrentRowIndex >= maxRowIndex ? 0 : stateCurrentRowIndex + 1;
 
@@ -318,114 +310,107 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
           duration: 0.5,
         },
       });
-      // setStateIsExiting(true);
       setStateCurrentRowIndex(nextRowIndex);
-      // TODO: maxRowIndex -> 0 => direction: -1, stepSize: n - 1
-    }, [
-      stateCurrentRowIndex,
-      rowContentAnimation,
-      maxRowIndex,
-      stateIsExiting,
-    ]);
+    }, [stateCurrentRowIndex, rowContentAnimation, maxRowIndex]);
 
     const decreaseCurrentRowIndex = useCallback(() => {
-      if (stateIsExiting) {
-        return;
-      }
-      // setStateDirection(-1);
-      // setStateStepSize(1);
-      // setStateIsExiting(true);
-      // setStateCurrentRowIndex((currentIndex) =>
-      //   currentIndex <= 0 ? maxRowIndex : currentIndex - 1,
-      // );
-    }, [maxRowIndex, stateIsExiting]);
+      const prevRowIndex =
+        stateCurrentRowIndex <= 0 ? maxRowIndex : stateCurrentRowIndex - 1;
+
+      rowContentAnimation.start({
+        x: -prevRowIndex * document.documentElement.clientWidth,
+        transition: {
+          ease: "easeInOut",
+          duration: 0.5,
+        },
+      });
+      setStateCurrentRowIndex(prevRowIndex);
+    }, [stateCurrentRowIndex, rowContentAnimation, maxRowIndex]);
 
     const changeCurrentRowIndexTo = useCallback(
       ({ indexTo }: { indexTo: number }) =>
         () => {
-          if (stateIsExiting) {
+          if (
+            indexTo === stateCurrentRowIndex ||
+            indexTo < 0 ||
+            indexTo > maxRowIndex
+          ) {
             return;
           }
-          // if (indexTo === stateCurrentRowIndex) {
-          //   setStateDirection(0);
-          //   setStateStepSize(0);
-          //   return;
-          // }
-          // if (indexTo < 0 || indexTo > maxRowIndex) {
-          //   return;
-          // }
 
-          // setStateDirection(stateCurrentRowIndex < indexTo ? 1 : -1);
-          // setStateStepSize(Math.abs(stateCurrentRowIndex - indexTo));
-          // setStateIsExiting(true);
-          // setStateCurrentRowIndex(indexTo);
+          rowContentAnimation.start({
+            x: -indexTo * document.documentElement.clientWidth,
+            transition: {
+              ease: "easeInOut",
+              duration: 0.5,
+            },
+          });
+          setStateCurrentRowIndex(indexTo);
         },
-      [stateIsExiting, stateCurrentRowIndex, maxRowIndex],
+      [stateCurrentRowIndex, rowContentAnimation, maxRowIndex],
     );
 
-    const onExitComplete = useCallback(() => {
-      setStateIsExiting(false);
-    }, []);
+    const windowResizeHandler = useCallback(() => {
+      rowContentAnimation.start({
+        x: -stateCurrentRowIndex * document.documentElement.clientWidth,
+        transition: {
+          duration: 0,
+        },
+      });
+    }, [stateCurrentRowIndex, rowContentAnimation]);
 
-    const navigate = useNavigate();
+    useEffect(() => {
+      window.addEventListener("resize", windowResizeHandler);
+      return () => {
+        window.removeEventListener("resize", windowResizeHandler);
+      };
+    }, [windowResizeHandler]);
 
-    const onClickMovieBox = useCallback(
-      ({ movieId }: { movieId: string }) => {
-        navigate(`movies/${movieId}`); // TODO:
+    const onClickItem = useCallback(
+      ({ id, title }: CarouselItem) => {
+        onOpenItem?.({ id, title });
       },
-      [navigate],
+      [onOpenItem],
     );
 
-    const onClickModalOverlay = useCallback(() => {
-      navigate(-1);
-    }, [navigate]);
+    const onClickModalOverlay = useCallback(
+      ({ id, title }: CarouselItem) => {
+        onCloseItem?.({ id, title });
+      },
+      [onCloseItem],
+    );
 
     const pathMatch = useMatch(pathMatchPattern);
 
-    const selectedMovieIndex = useMemo(
+    const selectedItemIndex = useMemo(
       () =>
         pathMatch && pathMatch.params[pathMatchParam]
           ? (items.findIndex(
-              (movie) =>
-                movie.id.toString() === pathMatch.params[pathMatchParam],
+              (item) => item.id.toString() === pathMatch.params[pathMatchParam],
             ) ?? -1)
           : -1,
       [items, pathMatch, pathMatchParam],
     );
 
-    const selectedMovie =
-      selectedMovieIndex === -1 ? null : items[selectedMovieIndex];
+    const selectedItem =
+      selectedItemIndex === -1 ? null : items[selectedItemIndex];
 
-    const [stateSelectedMovieImage, setStateSelectedMovieImage] =
+    const [stateSelectedItemImage, setStateSelectedItemImage] =
       useState<React.ReactNode>(null);
 
     useEffect(() => {
-      if (selectedMovieIndex !== -1) {
-        setStateSelectedMovieImage(images[selectedMovieIndex]);
+      if (selectedItemIndex !== -1) {
+        setStateSelectedItemImage(images[selectedItemIndex]);
       }
-    }, [selectedMovieIndex, images]);
+    }, [selectedItemIndex, images]);
 
     return (
       <>
-        <CarouselBase ref={ref} {...otherProps}>
-          {/* <AnimatePresence
-              custom={{
-                direction: stateDirection,
-                stepSize: stateStepSize,
-              }}
-              initial={false}
-              onExitComplete={onExitComplete}
-            > */}
+        <CarouselBase ref={refBase} {...otherProps}>
           <CarouselRows
             variants={rowContentVariants}
             initial="initial"
             animate={rowContentAnimation}
-            // animate="visible"
-            // exit="exit"
-            onAnimationComplete={(animationDefinition) => {
-              console.log(animationDefinition);
-              onExitComplete();
-            }}
           >
             {Array.from({ length: maxRowIndex + 1 }, (_, rowIndex) => {
               return (
@@ -433,20 +418,6 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                   <CarouselRowContent
                     key={rowIndex}
                     itemCntPerRow={itemCntPerRow}
-                    // custom={{
-                    //   direction: stateDirection,
-                    //   stepSize: stateStepSize,
-                    // }}
-                    // variants={rowContentVariants}
-                    // initial="hidden"
-                    // animate={rowContentAnimation}
-                    // // animate="visible"
-                    // // exit="exit"
-                    // itemCntPerRow={itemCntPerRow}
-                    // onAnimationComplete={(animationDefinition) => {
-                    //   console.log(animationDefinition);
-                    //   onExitComplete();
-                    // }}
                   >
                     {items
                       .slice(
@@ -454,7 +425,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                         itemCntPerRow * (rowIndex + 1),
                       )
                       .map((item, index) => {
-                        const movieIndex = itemCntPerRow * rowIndex + index;
+                        const itemIndex = itemCntPerRow * rowIndex + index;
 
                         return (
                           <CarouselItemBox
@@ -467,11 +438,14 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                               type: "tween",
                             }}
                             onClick={() =>
-                              onClickMovieBox({ movieId: item.id.toString() })
+                              onClickItem({
+                                id: item.id.toString(),
+                                title: item.title,
+                              })
                             }
                           >
                             <CarouselItemPoster>
-                              {images[movieIndex]}
+                              {images[itemIndex]}
                             </CarouselItemPoster>
                             <CarouselItemTooltipOverflowParentGuard>
                               <CarouselItemTooltip
@@ -514,10 +488,15 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
           </CarouselControllers>
         </CarouselBase>
         <AnimatePresence>
-          {!!pathMatch && (
+          {pathMatch && selectedItem && (
             <>
               <ModalOverlay
-                onClick={onClickModalOverlay}
+                onClick={() =>
+                  onClickModalOverlay({
+                    id: selectedItem.id.toString(),
+                    title: selectedItem.title,
+                  })
+                }
                 animate={{
                   opacity: 1,
                 }}
@@ -525,15 +504,13 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                   opacity: 0,
                 }}
               />
-              <ModalContent layoutId={pathMatch.params.movieId}>
-                {selectedMovie && (
+              <ModalContent layoutId={pathMatch.params[pathMatchParam]}>
+                {selectedItem && (
                   <>
-                    <SelectedMoviePoster>
-                      {stateSelectedMovieImage}
-                    </SelectedMoviePoster>
-                    <SelectedMovieTitle>
-                      {selectedMovie.title}
-                    </SelectedMovieTitle>
+                    <SelectedItemPoster>
+                      {stateSelectedItemImage}
+                    </SelectedItemPoster>
+                    <SelectedItemTitle>{selectedItem.title}</SelectedItemTitle>
                   </>
                 )}
               </ModalContent>

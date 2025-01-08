@@ -1,19 +1,14 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
 import parse from "html-react-parser";
 import { getImageUrl, getMoviesNowPlaying, IMAGE_FALLBACK_URL } from "@/api";
 import { basePath } from "@/router";
 import { preloadAllImages } from "@/utils";
-import {
-  AnimatePresence,
-  motion,
-  useIsomorphicLayoutEffect,
-  Variants,
-} from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "react-query";
-import { useMatch, useNavigate } from "react-router-dom";
 import { css, styled } from "styled-components";
 import { useMedia } from "react-use";
-import { Carousel } from "@/components/Carousel";
+import { Carousel, OnCloseItem, OnOpenItem } from "@/components/Carousel";
+import { useNavigate } from "react-router-dom";
+import netflixInitialLogo from "@/assets/netflix-initial-logo.png";
 
 const HomeBase = styled.div`
   height: 200vh;
@@ -249,8 +244,12 @@ function Home() {
       });
       console.log(preloadedImageElements);
 
-      const preloadedImageComponents = preloadedImageElements.map(
-        (element) => (element?.outerHTML ? parse(element?.outerHTML) : null), // TODO: error image
+      const preloadedImageComponents = preloadedImageElements.map((element) =>
+        element?.outerHTML ? (
+          parse(element?.outerHTML)
+        ) : (
+          <img src={netflixInitialLogo} />
+        ),
       );
       setStatePreloadedImages(preloadedImageComponents);
     })();
@@ -267,6 +266,19 @@ function Home() {
       id: movie.id.toString(),
     }));
   }, [data]);
+
+  const navigate = useNavigate();
+
+  const onOpenNowPlaygMoviesItem = useCallback<OnOpenItem>(
+    ({ id }) => {
+      navigate(`movies/${id}`);
+    },
+    [navigate],
+  );
+
+  const onCloseNowPlayingMoviesItem = useCallback<OnCloseItem>(() => {
+    navigate(-1);
+  }, [navigate]);
 
   return (
     <HomeBase>
@@ -298,6 +310,8 @@ function Home() {
             images={statePreloadedImages}
             pathMatchPattern={`${basePath}/movies/:movieId`}
             pathMatchParam="movieId"
+            onOpenItem={onOpenNowPlaygMoviesItem}
+            onCloseItem={onCloseNowPlayingMoviesItem}
           />
         </>
       )}

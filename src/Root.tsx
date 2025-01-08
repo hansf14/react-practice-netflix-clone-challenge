@@ -8,8 +8,8 @@ import { ReactQueryDevtools } from "react-query/devtools";
 import { HeaderNavBar } from "@/components/HeaderNavBar";
 // import { RecoilRoot } from "recoil";
 // import RecoilNexus from "recoil-nexus";
-// import reactLogo from "./assets/react.svg";
-// import viteLogo from "/vite.svg";
+// import reactLogo from "./assets/react.svg"; // /src/assets/...
+// import viteLogo from "/vite.svg"; // /public/...
 
 /* @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap'); */
 const GlobalStyle = createGlobalStyle`
