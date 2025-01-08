@@ -1,3 +1,4 @@
+import { useCallback, useRef, useState } from "react";
 import { styled } from "styled-components";
 import {
   motion,
@@ -7,13 +8,12 @@ import {
   Variants,
 } from "motion/react";
 import { Link, useMatch } from "react-router-dom";
-import { basePath } from "@/router";
-import { useResolvedPath } from "react-router-dom";
-import { Select } from "@/components/SearchBox";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { SearchOutlined } from "@ant-design/icons";
 import { Button, Input, InputRef, Modal } from "antd";
 import { useClickAway, useMedia } from "react-use";
+import { basePath } from "@/router";
+import { withMemoAndRef } from "@/hocs/withMemoAndRef";
+import { SmartOmit, StyledComponentProps } from "@/utils";
 
 const HeaderNavBarBase = styled(motion.nav)`
   z-index: 1000;
@@ -215,180 +215,194 @@ const headerNavBarVariants: Variants = {
   },
 };
 
-export const HeaderNavBar = () => {
-  const tvPath = `${basePath}/tv`;
-  const homeMatch = useMatch(basePath);
-  const tvMatch = useMatch(tvPath);
+type HeaderNavBarProps = SmartOmit<
+  {} & StyledComponentProps<"div">,
+  "children"
+>;
 
-  const isSmallerEqual600px = useMedia("(max-width: 600px)");
+export const HeaderNavBar = withMemoAndRef<
+  "nav",
+  HTMLElement,
+  HeaderNavBarProps
+>({
+  displayName: "HeaderNavBar",
+  Component: (props, ref) => {
+    const tvPath = `${basePath}/tv`;
+    const homeMatch = useMatch(basePath);
+    const tvMatch = useMatch(tvPath);
 
-  const headerNavBarAnimation = useAnimation();
+    const isSmallerEqual600px = useMedia("(max-width: 600px)");
 
-  const { scrollY } = useScroll();
-  useMotionValueEvent(scrollY, "change", (latestValue) => {
-    // console.log(latestValue);
-    if (latestValue > 80) {
-      headerNavBarAnimation.start("scroll");
-    } else {
-      headerNavBarAnimation.start("top");
-    }
-  });
+    const headerNavBarAnimation = useAnimation();
 
-  const [stateIsModalOpen, setStateIsModalOpen] = useState<boolean>(false);
-  const refSearchBoxModalInput = useRef<InputRef | null>(null);
+    const { scrollY } = useScroll();
+    useMotionValueEvent(scrollY, "change", (latestValue) => {
+      // console.log(latestValue);
+      if (latestValue > 80) {
+        headerNavBarAnimation.start("scroll");
+      } else {
+        headerNavBarAnimation.start("top");
+      }
+    });
 
-  const openModal = useCallback(() => {
-    setStateIsModalOpen(true);
-    setTimeout(() => {
-      refSearchBoxModalInput.current?.focus({ cursor: "all" });
-    }, 1);
-  }, []);
+    const [stateIsModalOpen, setStateIsModalOpen] = useState<boolean>(false);
+    const refSearchBoxModalInput = useRef<InputRef | null>(null);
 
-  const closeModal = useCallback(() => {
-    setStateIsModalOpen(false);
-  }, []);
+    const openModal = useCallback(() => {
+      setStateIsModalOpen(true);
+      setTimeout(() => {
+        refSearchBoxModalInput.current?.focus({ cursor: "all" });
+      }, 1);
+    }, []);
 
-  const [stateIsSearchBoxOpen, setStateIsSearchBoxOpen] =
-    useState<boolean>(false);
+    const closeModal = useCallback(() => {
+      setStateIsModalOpen(false);
+    }, []);
 
-  const inputAnimation = useAnimation();
+    const [stateIsSearchBoxOpen, setStateIsSearchBoxOpen] =
+      useState<boolean>(false);
 
-  const openSearchBoxHandler = useCallback(() => {
-    console.log("[openSearchBoxHandler]");
+    const inputAnimation = useAnimation();
 
-    // TODO: open at medium screen ++
-    // open modal at small screen
-    setStateIsSearchBoxOpen(true);
+    const openSearchBoxHandler = useCallback(() => {
+      console.log("[openSearchBoxHandler]");
 
-    if (!isSmallerEqual600px) {
-      inputAnimation.start({
-        width: 260,
-        transition: { ease: "easeInOut", duration: 0.3 },
-      });
-    } else {
-      openModal();
-    }
-  }, [inputAnimation, isSmallerEqual600px, openModal]);
+      // TODO: open at medium screen ++
+      // open modal at small screen
+      setStateIsSearchBoxOpen(true);
 
-  const closeSearchBoxHandler = useCallback(() => {
-    if (!isSmallerEqual600px && stateIsSearchBoxOpen) {
-      inputAnimation.start({
-        width: 40,
-        transition: { ease: "easeInOut", duration: 0.3 },
-        onAnimationEnd: () => setStateIsSearchBoxOpen(false),
-      });
-    } else if (isSmallerEqual600px && stateIsSearchBoxOpen) {
-      setStateIsSearchBoxOpen(false);
-      closeModal();
-    }
-  }, [inputAnimation, isSmallerEqual600px, stateIsSearchBoxOpen, closeModal]);
+      if (!isSmallerEqual600px) {
+        inputAnimation.start({
+          width: 260,
+          transition: { ease: "easeInOut", duration: 0.3 },
+        });
+      } else {
+        openModal();
+      }
+    }, [inputAnimation, isSmallerEqual600px, openModal]);
 
-  const searchBoxClickAwayHander = useCallback(() => {
-    if (!isSmallerEqual600px && stateIsSearchBoxOpen) {
-      inputAnimation.start({
-        width: 40,
-        transition: { ease: "easeInOut", duration: 0.3 },
-        onAnimationEnd: () => setStateIsSearchBoxOpen(false),
-      });
-    }
-  }, [inputAnimation, isSmallerEqual600px, stateIsSearchBoxOpen]);
+    const closeSearchBoxHandler = useCallback(() => {
+      if (!isSmallerEqual600px && stateIsSearchBoxOpen) {
+        inputAnimation.start({
+          width: 40,
+          transition: { ease: "easeInOut", duration: 0.3 },
+          onAnimationEnd: () => setStateIsSearchBoxOpen(false),
+        });
+      } else if (isSmallerEqual600px && stateIsSearchBoxOpen) {
+        setStateIsSearchBoxOpen(false);
+        closeModal();
+      }
+    }, [inputAnimation, isSmallerEqual600px, stateIsSearchBoxOpen, closeModal]);
 
-  const refSearchBox = useRef<HTMLDivElement | null>(null);
-  useClickAway(refSearchBox, searchBoxClickAwayHander, ["click"]);
+    const searchBoxClickAwayHander = useCallback(() => {
+      if (!isSmallerEqual600px && stateIsSearchBoxOpen) {
+        inputAnimation.start({
+          width: 40,
+          transition: { ease: "easeInOut", duration: 0.3 },
+          onAnimationEnd: () => setStateIsSearchBoxOpen(false),
+        });
+      }
+    }, [inputAnimation, isSmallerEqual600px, stateIsSearchBoxOpen]);
 
-  const searchInputPlaceholderText = "Search for a movie or a TV show...";
+    const refSearchBox = useRef<HTMLDivElement | null>(null);
+    useClickAway(refSearchBox, searchBoxClickAwayHander, ["click"]);
 
-  const [stateSearchBoxInputValue, setStateSearchBoxInputValue] =
-    useState<string>("");
+    const searchInputPlaceholderText = "Search for a movie or a TV show...";
 
-  const onChangeSearchBoxInput = useCallback((event: React.ChangeEvent) => {
-    const element = event.target as HTMLInputElement;
-    setStateSearchBoxInputValue(element.value);
-  }, []);
+    const [stateSearchBoxInputValue, setStateSearchBoxInputValue] =
+      useState<string>("");
 
-  return (
-    <>
-      <HeaderNavBarBase
-        variants={headerNavBarVariants}
-        animate={headerNavBarAnimation}
-        initial="top"
-      >
-        <HeaderNavBarColumn>
-          <HeaderNavBarLogo
-            height="677"
-            viewBox=".238 .034 919.406 248.488"
-            width="2500"
-            xmlns="http://www.w3.org/2000/svg"
-            variants={logoVariants}
-            initial="initial"
-            whileHover="hover"
-          >
-            <motion.path
-              d="m870.46 118.314 49.184 130.208c-14.495-2.07-28.982-4.663-43.733-6.999l-27.707-71.945-28.468 66.006c-13.973-2.336-27.698-3.114-41.672-4.928l49.955-113.89-45.309-116.732h41.937l25.362 65.22 27.185-65.22h42.442zm-120.864-118.28h-38.052v225.71c12.425.779 25.362 1.292 38.052 2.841zm-70.927 223.118c-34.68-2.328-69.37-4.39-104.829-5.177v-217.94h38.823v181.188c22.264.514 44.52 2.32 66.006 3.355zm-146.252-134.847v38.822h-53.06v88.263h-38.3v-215.356h108.713v38.822h-70.405v49.45h53.06zm-156.597-49.449v178.605c-12.946 0-26.14 0-38.83.514v-179.119h-40.122v-38.822h119.322v38.822zm-120.88 90.334c-17.08 0-37.274 0-51.769.787v57.715c22.778-1.557 45.556-3.363 68.59-4.141v37.273l-107.412 8.548v-229.338h107.405v38.822h-68.584v52.29c15.017 0 38.052-.778 51.768-.778v38.83zm-215.109-21.743v135.633c-13.965 1.557-26.398 3.371-39.593 5.442v-248.488h37.017l50.469 141.076v-141.076h38.83v232.436c-13.717 2.336-27.698 3.114-42.45 5.177z"
-              fill="#e50914"
-            />
-          </HeaderNavBarLogo>
-          <HeaderNavBarItems>
-            <HeaderNavBarItem>
-              <Link to={basePath}>
-                Home
-                {homeMatch && (
-                  <HeaderNavBarItemCircle layoutId="HeaderNavBarItemCircle" />
-                )}
-              </Link>
-            </HeaderNavBarItem>
-            <HeaderNavBarItem>
-              <Link to={tvPath}>
-                Tv Shows
-                {tvMatch && (
-                  <HeaderNavBarItemCircle layoutId="HeaderNavBarItemCircle" />
-                )}
-              </Link>
-            </HeaderNavBarItem>
-          </HeaderNavBarItems>
-        </HeaderNavBarColumn>
-        <HeaderNavBarColumn>
-          <HeaderNavBarSearchBox
-            ref={refSearchBox}
-            animate={inputAnimation}
-            isSearchBoxOpen={stateIsSearchBoxOpen}
-            onClick={openSearchBoxHandler}
-          >
-            <HeaderNavBarSearchIcon isSearchBoxOpen={stateIsSearchBoxOpen} />
-            <HeaderNavBarSearchInputContainer>
-              <HeaderNavBarSearchInput
-                placeholder={searchInputPlaceholderText}
-                size={searchInputPlaceholderText.length}
+    const onChangeSearchBoxInput = useCallback((event: React.ChangeEvent) => {
+      const element = event.target as HTMLInputElement;
+      setStateSearchBoxInputValue(element.value);
+    }, []);
+
+    return (
+      <>
+        <HeaderNavBarBase
+          ref={ref}
+          variants={headerNavBarVariants}
+          animate={headerNavBarAnimation}
+          initial="top"
+          {...props}
+        >
+          <HeaderNavBarColumn>
+            <HeaderNavBarLogo
+              height="677"
+              viewBox=".238 .034 919.406 248.488"
+              width="2500"
+              xmlns="http://www.w3.org/2000/svg"
+              variants={logoVariants}
+              initial="initial"
+              whileHover="hover"
+            >
+              <motion.path
+                d="m870.46 118.314 49.184 130.208c-14.495-2.07-28.982-4.663-43.733-6.999l-27.707-71.945-28.468 66.006c-13.973-2.336-27.698-3.114-41.672-4.928l49.955-113.89-45.309-116.732h41.937l25.362 65.22 27.185-65.22h42.442zm-120.864-118.28h-38.052v225.71c12.425.779 25.362 1.292 38.052 2.841zm-70.927 223.118c-34.68-2.328-69.37-4.39-104.829-5.177v-217.94h38.823v181.188c22.264.514 44.52 2.32 66.006 3.355zm-146.252-134.847v38.822h-53.06v88.263h-38.3v-215.356h108.713v38.822h-70.405v49.45h53.06zm-156.597-49.449v178.605c-12.946 0-26.14 0-38.83.514v-179.119h-40.122v-38.822h119.322v38.822zm-120.88 90.334c-17.08 0-37.274 0-51.769.787v57.715c22.778-1.557 45.556-3.363 68.59-4.141v37.273l-107.412 8.548v-229.338h107.405v38.822h-68.584v52.29c15.017 0 38.052-.778 51.768-.778v38.83zm-215.109-21.743v135.633c-13.965 1.557-26.398 3.371-39.593 5.442v-248.488h37.017l50.469 141.076v-141.076h38.83v232.436c-13.717 2.336-27.698 3.114-42.45 5.177z"
+                fill="#e50914"
               />
-            </HeaderNavBarSearchInputContainer>
-          </HeaderNavBarSearchBox>
-        </HeaderNavBarColumn>
-      </HeaderNavBarBase>
-      <HeaderNavBarSearchBoxModal
-        // centered
-        width={"min(80%, 350px)"}
-        open={stateIsModalOpen}
-        title={
-          <HeaderNavBarSearchBoxModalTitle>
-            Search
-          </HeaderNavBarSearchBoxModalTitle>
-        }
-        footer={[
-          <Button key="submit" type="primary" onClick={() => {}}>
-            Search
-          </Button>,
-        ]}
-        onCancel={closeSearchBoxHandler}
-      >
-        <HeaderNavBarSearchBoxModalBody>
-          <HeaderNavBarSearchBoxModalInput
-            ref={refSearchBoxModalInput}
-            placeholder={searchInputPlaceholderText}
-            value={stateSearchBoxInputValue}
-            onChange={onChangeSearchBoxInput}
-          />
-        </HeaderNavBarSearchBoxModalBody>
-      </HeaderNavBarSearchBoxModal>
-    </>
-  );
-};
+            </HeaderNavBarLogo>
+            <HeaderNavBarItems>
+              <HeaderNavBarItem>
+                <Link to={basePath}>
+                  Home
+                  {homeMatch && (
+                    <HeaderNavBarItemCircle layoutId="HeaderNavBarItemCircle" />
+                  )}
+                </Link>
+              </HeaderNavBarItem>
+              <HeaderNavBarItem>
+                <Link to={tvPath}>
+                  Tv Shows
+                  {tvMatch && (
+                    <HeaderNavBarItemCircle layoutId="HeaderNavBarItemCircle" />
+                  )}
+                </Link>
+              </HeaderNavBarItem>
+            </HeaderNavBarItems>
+          </HeaderNavBarColumn>
+          <HeaderNavBarColumn>
+            <HeaderNavBarSearchBox
+              ref={refSearchBox}
+              animate={inputAnimation}
+              isSearchBoxOpen={stateIsSearchBoxOpen}
+              onClick={openSearchBoxHandler}
+            >
+              <HeaderNavBarSearchIcon isSearchBoxOpen={stateIsSearchBoxOpen} />
+              <HeaderNavBarSearchInputContainer>
+                <HeaderNavBarSearchInput
+                  placeholder={searchInputPlaceholderText}
+                  size={searchInputPlaceholderText.length}
+                />
+              </HeaderNavBarSearchInputContainer>
+            </HeaderNavBarSearchBox>
+          </HeaderNavBarColumn>
+        </HeaderNavBarBase>
+        <HeaderNavBarSearchBoxModal
+          // centered
+          width={"min(80%, 350px)"}
+          open={stateIsModalOpen}
+          title={
+            <HeaderNavBarSearchBoxModalTitle>
+              Search
+            </HeaderNavBarSearchBoxModalTitle>
+          }
+          footer={[
+            <Button key="submit" type="primary" onClick={() => {}}>
+              Search
+            </Button>,
+          ]}
+          onCancel={closeSearchBoxHandler}
+        >
+          <HeaderNavBarSearchBoxModalBody>
+            <HeaderNavBarSearchBoxModalInput
+              ref={refSearchBoxModalInput}
+              placeholder={searchInputPlaceholderText}
+              value={stateSearchBoxInputValue}
+              onChange={onChangeSearchBoxInput}
+            />
+          </HeaderNavBarSearchBoxModalBody>
+        </HeaderNavBarSearchBoxModal>
+      </>
+    );
+  },
+});

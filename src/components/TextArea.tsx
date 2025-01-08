@@ -409,13 +409,3 @@ export const TextArea = withMemoAndRef<
     );
   },
 });
-
-export type UseTextAreaParams = SmartMerge<
-  {
-    initialIsEditMode?: boolean;
-    onEditModeChange?: (params?: {
-      isEditModeOld: boolean;
-      isEditModeNew: boolean;
-    }) => void;
-  } & TextAreaPropsListeners
->;
