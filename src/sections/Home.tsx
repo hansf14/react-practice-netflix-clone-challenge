@@ -12,6 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "react-query";
 import { useMatch, useNavigate } from "react-router-dom";
 import { css, styled } from "styled-components";
+import { useMedia } from "react-use";
 
 const HomeBase = styled.div`
   height: 200vh;
@@ -29,46 +30,179 @@ export type BannerProps = {
 };
 
 const Banner = styled.div.withConfig({
-  shouldForwardProp: (prop) => !["backgroundImage"].includes(prop),
+  shouldForwardProp: (prop) => !["backgroundImageSrc"].includes(prop),
 })<BannerProps>`
-  height: 100vh; // TODO: minus header
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1280 / 720;
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding: 60px;
+  @media (max-width: 1200px) {
+    & {
+      padding: 40px;
+    }
+  }
+  @media (max-width: 800px) {
+    & {
+      padding: 30px;
+    }
+  }
+
   ${({ backgroundImageSrc }) => {
     return !!backgroundImageSrc
       ? css`
           background-image: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 1)),
             url(${backgroundImageSrc});
-          background-size: cover;
+          background-size: contain;
+          background-repeat: no-repeat;
         `
       : "";
   }}
 `;
 
-const Title = styled.h2`
-  font-size: 68px;
-  margin-bottom: 10px;
+const BannerContent = styled.div`
+  @media (max-width: 800px) {
+    & {
+      position: absolute;
+      left: 30px;
+      right: 30px;
+      bottom: 15px;
+    }
+  }
+
+  @media (max-width: 340px) {
+    & {
+      left: 20px;
+      right: 20px;
+    }
+  }
 `;
 
-export type OverviewProps = {
-  textLength?: number;
+const BannerContentMobile = styled.div`
+  background-color: #000;
+
+  padding: 0 30px 30px;
+  @media (max-width: 340px) {
+    & {
+      padding: 0 20px 20px;
+    }
+  }
+`;
+
+export type TitleProps = {
+  textLength: number;
 };
 
-const Overview = styled.div.withConfig({
-  shouldForwardProp: (prop) => !["backgroundImage"].includes(prop),
-})<OverviewProps>`
-  width: 50%;
-  ${({ textLength = 100 }) => {
-    if (textLength > 300) {
-      return "font-size: 20px";
-    } else if (textLength > 200) {
-      return "font-size: 30px";
-    } else {
-      return "font-size: 35px";
+const Title = styled.h2.withConfig({
+  shouldForwardProp: (prop) => !["textLength"].includes(prop),
+})<TitleProps>`
+  margin-bottom: 15px;
+  @media (max-width: 600px) {
+    & {
+      margin-bottom: 0;
     }
+  }
+
+  --font-size-scale-factor: 1;
+  @media (min-width: 1901px) {
+    & {
+      --font-size-scale-factor: 3;
+    }
+  }
+  @media (max-width: 1900px) {
+    & {
+      --font-size-scale-factor: 2.5;
+    }
+  }
+  @media (max-width: 1200px) {
+    & {
+      --font-size-scale-factor: 2;
+    }
+  }
+  @media (max-width: 1000px) {
+    & {
+      --font-size-scale-factor: 1.8;
+    }
+  }
+  @media (max-width: 800px) {
+    & {
+      --font-size-scale-factor: 1.6;
+    }
+  }
+  @media (max-width: 600px) {
+    & {
+      --font-size-scale-factor: 1.4;
+    }
+  }
+  @media (max-width: 400px) {
+    & {
+      --font-size-scale-factor: 1;
+    }
+  }
+  ${({ textLength }) => {
+    let baseFontSize = 28;
+    if (textLength > 30) {
+      baseFontSize = 24;
+    }
+    return css`
+      --font-size: calc(${baseFontSize}px * var(--font-size-scale-factor, 1));
+      --round-interval: 1px;
+      font-size: clamp(
+        24px,
+        round(var(--font-size), var(--round-interval)),
+        68px
+      );
+    `;
   }}
+`;
+
+const Overview = styled.div`
+  width: 50%;
+  @media (min-width: 1901px) {
+    & {
+      width: 30%;
+    }
+  }
+  @media (max-width: 1900px) {
+    & {
+      width: 30%;
+    }
+  }
+  @media (max-width: 1500px) {
+    & {
+      width: 40%;
+    }
+  }
+  @media (max-width: 800px) {
+    & {
+      width: 100%;
+    }
+  }
+
+  font-size: 18px;
+  @media (max-width: 1000px) {
+    & {
+      font-size: 16px;
+    }
+  }
+`;
+
+const SliderTitle = styled.h1`
+  margin: 15px 0 15px 10%;
+  font-size: 26px;
+
+  @media (max-width: 1000px) {
+    & {
+      margin: 15px 0 15px 15px;
+    }
+  }
+  @media (max-width: 400px) {
+    & {
+      font-size: 20px;
+    }
+  }
 `;
 
 const Slider = styled.div`
@@ -79,8 +213,14 @@ const Slider = styled.div`
 `;
 
 const SliderContent = styled.div`
-  width: 80%;
   display: grid;
+
+  width: 80%;
+  @media (max-width: 1000px) {
+    & {
+      width: 100%;
+    }
+  }
 `;
 
 export type RowProps = {
@@ -102,6 +242,11 @@ const Row = styled(motion.div).withConfig({
     1fr
   );
   gap: 10px;
+  @media (max-width: 600px) {
+    & {
+      gap: 0;
+    }
+  }
 `;
 
 export type PosterProps = {};
@@ -127,11 +272,17 @@ const cssPosterImage = css`
   display: block;
   max-width: 100%;
   max-height: 100%;
+  object-fit: cover;
+  height: 100%;
 `;
 
 const Poster = styled.div`
+  z-index: 100;
   transform: translateZ(5px);
   aspect-ratio: 2 / 3; // Prevent subpixel problem by setting the aspect ratio to the image intrinsic dimension.
+
+  display: flex;
+  align-items: center;
 
   img {
     ${cssPosterImage}
@@ -139,20 +290,33 @@ const Poster = styled.div`
 `;
 
 const MovieGeneralInfo = styled(motion.div)`
+  z-index: 10;
   transform: translateZ(3px);
   position: absolute;
   bottom: 0;
   width: 100%;
 
-  padding: 15px 20px;
+  padding: 10px;
   opacity: 0;
   background-color: #eee;
   color: #111;
+
+  @media (max-width: 500px) {
+    & {
+      padding: 10px 5px;
+    }
+  }
 `;
 
 const MovieGeneralInfoTitle = styled.h3`
   text-align: center;
-  font-size: 18px;
+
+  font-size: 14px;
+  @media (max-width: 500px) {
+    & {
+      font-size: 12px;
+    }
+  }
 `;
 
 const ModalContent = styled(motion.div)`
@@ -166,7 +330,7 @@ const ModalContent = styled(motion.div)`
   margin: auto;
 
   border-radius: 10px;
-  background-color: #333;
+  background-color: #111;
 `;
 
 const ModalOverlay = styled(motion.div)`
@@ -236,14 +400,16 @@ const movieInfoVariants: Variants = {
   },
 };
 
-const itemCntPerRow = 5;
-
 function Home() {
   const { data, error, isLoading, isSuccess, isError } = useQuery({
     queryKey: ["getMoviesNowPlaying"],
     queryFn: getMoviesNowPlaying,
   });
   console.log(data);
+
+  const isSmallerEqual600px = useMedia("(max-width: 600px)");
+
+  const itemCntPerRow = isSmallerEqual600px ? 4 : 5;
 
   const [stateVisibleRowIndex, setStateVisibleRowIndex] = useState<number>(0);
   const [stateIsExiting, setStateIsExiting] = useState<boolean>(false);
@@ -260,7 +426,7 @@ function Home() {
     setStateVisibleRowIndex((currentIndex) =>
       currentIndex >= maxVisibleRowIndex ? 0 : currentIndex + 1,
     );
-  }, [data, stateIsExiting]);
+  }, [data, stateIsExiting, itemCntPerRow]);
 
   const onExitComplete = useCallback(() => {
     setStateIsExiting(false);
@@ -309,7 +475,6 @@ function Home() {
     : IMAGE_FALLBACK_URL;
 
   const moviePosterImageSrcArr = useMemo(() => {
-    console.log("DOH!");
     return (
       data?.results.map((movie) => {
         return !!movie.poster_path
@@ -321,16 +486,6 @@ function Home() {
       }) ?? []
     );
   }, [data?.results]);
-
-  const selectedMovieImageSrcPathSegment = selectedMovie?.poster_path
-    ? selectedMovie?.poster_path
-    : null;
-  const selectedMovieImageSrc = !!selectedMovieImageSrcPathSegment
-    ? getImageUrl({
-        pathSegment: selectedMovieImageSrcPathSegment,
-        format: "w500",
-      })
-    : IMAGE_FALLBACK_URL;
 
   const [statePreloadedImages, setStatePreloadedImages] = useState<
     React.ReactNode[]
@@ -368,12 +523,22 @@ function Home() {
             onClick={increaseVisibleRowIndex}
             backgroundImageSrc={bannerMovieImageSrc}
           >
-            <Title>{data.results[0].title}</Title>
-            <Overview textLength={data.results[0].overview.length}>
-              {data.results[0].overview}
-            </Overview>
+            <BannerContent>
+              <Title textLength={data.results[0].title.length}>
+                {data.results[0].title}
+              </Title>
+              {!isSmallerEqual600px && (
+                <Overview>{data.results[0].overview}</Overview>
+              )}
+            </BannerContent>
           </Banner>
+          {isSmallerEqual600px && (
+            <BannerContentMobile>
+              <Overview>{data.results[0].overview}</Overview>
+            </BannerContentMobile>
+          )}
 
+          <SliderTitle>Now Playing</SliderTitle>
           <Slider>
             <SliderContent>
               <AnimatePresence initial={false} onExitComplete={onExitComplete}>
