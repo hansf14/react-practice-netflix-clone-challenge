@@ -77,8 +77,8 @@ const GlobalStyle = createGlobalStyle`
   }
   
   html {
+    overflow-y: auto;
     width: 100%;
-    height: 100%;
     min-height: 100%;
 
     font-family: "Source Sans 3", sans-serif;
@@ -89,14 +89,12 @@ const GlobalStyle = createGlobalStyle`
   body,
   #root {
     width: 100%;
-    height: 100%;
   }
 `;
 
 const Layout = styled.main`
   overflow-x: hidden;
   width: 100%;
-  height: 100%;
 
   padding-top: ${({ theme }) => `${theme.headerNavBarHeight}px`};
   background-color: ${({ theme }) => theme.layoutBackground};

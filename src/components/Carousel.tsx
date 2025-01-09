@@ -97,7 +97,7 @@ const cssCarouselItemPosterImage = css`
 `;
 
 const CarouselItemPoster = styled.div`
-  z-index: 100;
+  // z-index: 100;
   transform: translateZ(5px);
   aspect-ratio: 2 / 3; // Prevent subpixel problem by setting the aspect ratio to the image intrinsic dimension.
 
@@ -114,7 +114,7 @@ const CarouselItemTooltipOverflowParentGuard = styled.div`
 `;
 
 const CarouselItemTooltip = styled(motion.div)`
-  z-index: 10;
+  // z-index: 10;
   transform: translateZ(3px);
   position: absolute;
   bottom: 0;
@@ -233,9 +233,10 @@ const itemBoxVariants: Variants = {
   hover: {
     scale: 1.3,
     z: 10,
+    // zIndex: 10,
     y: -10,
     transition: {
-      type: "tween", // whileHover in/out 애니메이션의 transition type은 variants와 prop에 둘 다 적어줘야함.
+      ease: "linear",
       delay: 0.5,
       duration: 0.3,
     },
@@ -247,7 +248,7 @@ const itemTooltipVariants: Variants = {
     opacity: 1,
     y: "calc(100% - 1px)", // prevent subpixel: 1px
     transition: {
-      type: "tween",
+      ease: "linear",
       delay: 0.5,
       duration: 0.3,
     },
@@ -271,6 +272,7 @@ export type OnOpenItem = ({ id, title }: CarouselItem) => void;
 export type OnCloseItem = ({ id, title }: CarouselItem) => void;
 
 export type CarouselProps = {
+  id: string;
   items: CarouselItem[];
   images: CarouselImage[];
   pathMatchPattern: string;
@@ -283,6 +285,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
   displayName: "Carousel",
   Component: (
     {
+      id,
       items,
       images,
       pathMatchPattern,
@@ -298,10 +301,12 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
       return refBase.current as HTMLDivElement;
     });
 
+    const refCarouselItemBoxes = useRef<(HTMLDivElement | null)[]>([]);
+
     const isSmallerEqual600px = useMedia("(max-width: 600px)");
     const totalCntItem = items.length;
     const defaultAnimationDuration = 1;
-    const gap = isSmallerEqual600px ? 10 : 0;
+    const gap = !isSmallerEqual600px ? 10 : 0;
 
     const itemCntPerRow = isSmallerEqual600px ? 4 : 5;
     const maxRowIndex = Math.ceil(totalCntItem / itemCntPerRow) - 1;
@@ -380,8 +385,6 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
           ) {
             return;
           }
-
-          console.log("DOH");
 
           if (refSize.current.width) {
             rowContentAnimation.start({
@@ -472,6 +475,28 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
       }
     }, [selectedItemIndex, images]);
 
+    const onLayoutAnimationToModal = useCallback(
+      ({ index }: { index: number }) =>
+        () => {
+          if (!refCarouselItemBoxes.current?.[index]) {
+            return;
+          }
+          refCarouselItemBoxes.current[index].style.translate = "0 0 100px";
+        },
+      [],
+    );
+
+    const onLayoutAnimationFromModal = useCallback(
+      ({ index }: { index: number }) =>
+        () => {
+          if (!refCarouselItemBoxes.current?.[index]) {
+            return;
+          }
+          refCarouselItemBoxes.current[index].style.translate = "";
+        },
+      [],
+    );
+
     return (
       <>
         <CarouselBase ref={refBase} {...otherProps}>
@@ -498,19 +523,24 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                         return (
                           <CarouselItemBox
                             key={item.id}
-                            layoutId={item.id.toString()}
+                            ref={(el) => {
+                              refCarouselItemBoxes.current[itemIndex] = el;
+                            }}
+                            layoutId={id + item.id}
                             variants={itemBoxVariants}
                             initial="initial"
                             whileHover="hover"
-                            transition={{
-                              type: "tween",
-                            }}
                             onClick={() =>
                               onClickItem({
-                                id: item.id.toString(),
+                                id: item.id,
                                 title: item.title,
                               })
                             }
+                            onTapStart={onLayoutAnimationToModal({ index })}
+                            // ㄴ onLayoutAnimationStart는 toModal 변하는 방향, fromModal 다시 되돌아오는 방향들 각각 시작할때 모두 발생해서 `onLayoutAnimationStart` 보다 `onTapStart`가 더 잘 맞는다.
+                            onLayoutAnimationComplete={onLayoutAnimationFromModal(
+                              { index },
+                            )}
                           >
                             <CarouselItemPoster>
                               {images[itemIndex]}
@@ -572,7 +602,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                   opacity: 0,
                 }}
               />
-              <ModalContent layoutId={pathMatch.params[pathMatchParam]}>
+              <ModalContent layoutId={id + pathMatch.params[pathMatchParam]}>
                 {selectedItem && (
                   <>
                     <SelectedItemPoster>

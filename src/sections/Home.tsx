@@ -19,9 +19,7 @@ import { Carousel, OnCloseItem, OnOpenItem } from "@/components/Carousel";
 import { useNavigate } from "react-router-dom";
 import netflixInitialLogo from "@/assets/netflix-initial-logo.png";
 
-const HomeBase = styled.div`
-  height: 200vh;
-`;
+const HomeBase = styled.div``;
 
 const Loader = styled.div`
   height: 20vh;
@@ -398,6 +396,7 @@ function Home() {
           <Slider>
             <SliderTitle>Now Playing</SliderTitle>
             <Carousel
+              id="nowPlaying"
               items={itemsNowPlaying}
               images={imagesNowPlaying}
               pathMatchPattern={`${basePath}/movies/:movieId`}
@@ -411,6 +410,7 @@ function Home() {
           <Slider>
             <SliderTitle>Popular</SliderTitle>
             <Carousel
+              id="popular"
               items={itemsPopular}
               images={imagesPopular}
               pathMatchPattern={`${basePath}/movies/:movieId`}
@@ -424,6 +424,7 @@ function Home() {
           <Slider>
             <SliderTitle>Top Rated</SliderTitle>
             <Carousel
+              id="topRated"
               items={itemsTopRated}
               images={imagesTopRated}
               pathMatchPattern={`${basePath}/movies/:movieId`}
@@ -437,6 +438,7 @@ function Home() {
           <Slider>
             <SliderTitle>Upcoming</SliderTitle>
             <Carousel
+              id="upcoming"
               items={itemsUpcoming}
               images={imagesUpcoming}
               pathMatchPattern={`${basePath}/movies/:movieId`}
