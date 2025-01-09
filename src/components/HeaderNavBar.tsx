@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { styled } from "styled-components";
 import {
   motion,
@@ -14,6 +14,7 @@ import { useClickAway, useMedia } from "react-use";
 import { basePath } from "@/router";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
 import { SmartOmit, StyledComponentProps } from "@/utils";
+import { SubmitHandler, useForm } from "react-hook-form";
 
 const HeaderNavBarBase = styled(motion.nav)`
   z-index: 1000;
@@ -40,7 +41,7 @@ const HeaderNavBarColumn = styled.div`
 const HeaderNavBarLogo = styled(motion.svg)`
   width: 120px;
   height: auto;
-  margin: 0 50px 0 10px;
+  margin: 0 35px 0 10px;
 
   @media (max-width: 400px) {
     & {
@@ -88,13 +89,13 @@ type HeaderNavBarSearchBoxProps = {
   isSearchBoxOpen: boolean;
 };
 
-const HeaderNavBarSearchBox = styled(motion.div).withConfig({
+const HeaderNavBarSearchBox = styled(motion.form).withConfig({
   shouldForwardProp: (prop) => !["isSearchBoxOpen"].includes(prop),
 })<HeaderNavBarSearchBoxProps>`
   position: relative;
-  width: 40px;
-  height: 40px;
-  padding: 5px;
+  width: 34px;
+  height: 34px;
+  padding: 2px 10px 2px 4px;
   margin-right: 10px;
 
   border: 1px solid #999;
@@ -105,17 +106,22 @@ const HeaderNavBarSearchBox = styled(motion.div).withConfig({
   ${({ isSearchBoxOpen }) => (!isSearchBoxOpen ? "cursor: pointer;" : "")}
 `;
 
-const HeaderNavBarSearchInputContainer = styled.div`
+const HeaderNavBarSearchBoxInputContainer = styled.div`
   overflow: hidden;
+  margin-left: 30px;
+  width: 100%;
 `;
 
-type HeaderNavBarSearchIconProps = {
+type HeaderNavBarSearchBoxSearchButtonProps = {
   isSearchBoxOpen: boolean;
 };
 
-const HeaderNavBarSearchIcon = styled(SearchOutlined).withConfig({
+const HeaderNavBarSearchBoxSearchButton = styled.button.withConfig({
   shouldForwardProp: (prop) => !["isSearchBoxOpen"].includes(prop),
-})<HeaderNavBarSearchIconProps>`
+})<HeaderNavBarSearchBoxSearchButtonProps>`
+  all: unset;
+  box-sizing: border-box;
+
   position: absolute;
   top: 50%;
   left: 50%;
@@ -131,22 +137,52 @@ const HeaderNavBarSearchIcon = styled(SearchOutlined).withConfig({
 
   cursor: pointer;
 
+  width: 22px;
+  height: 22px;
   svg {
-    width: 28px;
-    height: 28px;
+    width: 22px;
+    height: 22px;
   }
 `;
 
-const HeaderNavBarSearchInput = styled.input`
-  all: unset;
-  box-sizing: border-box;
-  margin-left: 36px;
+const HeaderNavBarSearchBoxIcon = styled(SearchOutlined)``;
 
-  // position: absolute;
+const HeaderNavBarSearchBoxInput = styled(Input)`
+  // antd style unset
+  &&& {
+    all: unset;
+    box-sizing: border-box;
+    width: 100%;
 
-  &::-webkit-input-placeholder {
-    // width: fit-content;
-    width: auto;
+    input {
+      all: unset;
+      box-sizing: border-box;
+      width: 100%;
+
+      &:hover {
+        border-color: unset;
+        background-color: unset;
+      }
+      &:focus-within {
+        border-color: unset;
+        box-shadow: unset;
+        outline: 0;
+        background-color: unset;
+      }
+
+      &::-webkit-input-placeholder {
+        color: inherit;
+        width: auto;
+      }
+    }
+  }
+
+  &&& {
+    display: flex;
+
+    & .ant-input-clear-icon {
+      color: inherit;
+    }
   }
 `;
 
@@ -167,13 +203,14 @@ const HeaderNavBarSearchBoxModalTitle = styled.div`
   color: #111;
 `;
 
-const HeaderNavBarSearchBoxModalBody = styled.div`
-  margin-bottom: 15px;
-
-  background-color: rgb(212, 238, 236, 0.5);
+const HeaderNavBarSearchBoxModalBody = styled.form`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
 `;
 
-const HeaderNavBarSearchBoxModalInput = styled(Input)`
+const HeaderNavBarSearchBoxModalInput = styled(Input.Search)`
   white-space: nowrap;
   overflow: hidden;
 
@@ -183,6 +220,18 @@ const HeaderNavBarSearchBoxModalInput = styled(Input)`
   &::placeholder {
     font-weight: bold;
     color: #ccc;
+  }
+`;
+
+const HeaderNavBarSearchBoxModalSearchButton = styled(Button)`
+  &&& {
+    font: inherit;
+    font-weight: bold;
+
+    svg {
+      width: 26px;
+      height: 26px;
+    }
   }
 `;
 
@@ -215,7 +264,12 @@ const headerNavBarVariants: Variants = {
   },
 };
 
-type HeaderNavBarProps = SmartOmit<
+export interface FormData {
+  keyword: string;
+  keywordModal: string;
+}
+
+export type HeaderNavBarProps = SmartOmit<
   {} & StyledComponentProps<"div">,
   "children"
 >;
@@ -234,8 +288,64 @@ export const HeaderNavBar = withMemoAndRef<
     const isSmallerEqual600px = useMedia("(max-width: 600px)");
 
     const headerNavBarAnimation = useAnimation();
+    const searchBoxInputAnimation = useAnimation();
+
+    const [stateIsSearchBoxOpen, setStateIsSearchBoxOpen] =
+      useState<boolean>(false);
+    const [stateIsModalOpen, setStateIsModalOpen] = useState<boolean>(false);
+
+    const refSearchBoxModalInput = useRef<InputRef | null>(null);
+    const refSearchBox = useRef<HTMLFormElement | null>(null);
 
     const { scrollY } = useScroll();
+
+    const { register, handleSubmit, watch, setValue, setFocus } =
+      useForm<FormData>();
+
+    const searchBoxInputFormProps = useMemo(
+      () => register("keyword", { required: true }),
+      [register],
+    );
+    const [searchInputValue] = watch(["keyword"]);
+
+    const {
+      ref: searchBoxModalInputFormPropsRef,
+      ...searchBoxModalInputFormProps
+    } = useMemo(() => register("keywordModal", { required: true }), [register]);
+
+    const searchBoxModalInputCbRef = useCallback(
+      (instance: InputRef | null) => {
+        refSearchBoxModalInput.current = instance;
+        searchBoxModalInputFormPropsRef(instance?.input);
+      },
+      [searchBoxModalInputFormPropsRef],
+    );
+
+    const onValid = useCallback<SubmitHandler<FormData>>(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      (data, event) => {
+        console.log(data);
+      },
+      [],
+    );
+
+    useEffect(() => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { unsubscribe } = watch((values, { name, type }) => {
+        // console.log(values, name, type);
+        if (values.keyword === values.keywordModal) {
+          return;
+        }
+
+        if (name === "keyword") {
+          setValue("keywordModal", values.keyword ?? "");
+        } else if (name === "keywordModal") {
+          setValue("keyword", values.keywordModal ?? "");
+        }
+      });
+      return () => unsubscribe();
+    }, [watch, setValue]);
+
     useMotionValueEvent(scrollY, "change", (latestValue) => {
       // console.log(latestValue);
       if (latestValue > 80) {
@@ -244,9 +354,6 @@ export const HeaderNavBar = withMemoAndRef<
         headerNavBarAnimation.start("top");
       }
     });
-
-    const [stateIsModalOpen, setStateIsModalOpen] = useState<boolean>(false);
-    const refSearchBoxModalInput = useRef<InputRef | null>(null);
 
     const openModal = useCallback(() => {
       setStateIsModalOpen(true);
@@ -259,10 +366,7 @@ export const HeaderNavBar = withMemoAndRef<
       setStateIsModalOpen(false);
     }, []);
 
-    const [stateIsSearchBoxOpen, setStateIsSearchBoxOpen] =
-      useState<boolean>(false);
-
-    const inputAnimation = useAnimation();
+    // const refS
 
     const openSearchBoxHandler = useCallback(() => {
       // console.log("[openSearchBoxHandler]");
@@ -270,50 +374,90 @@ export const HeaderNavBar = withMemoAndRef<
       setStateIsSearchBoxOpen(true);
 
       if (!isSmallerEqual600px) {
-        inputAnimation.start({
-          width: 260,
-          transition: { ease: "easeInOut", duration: 0.3 },
-        });
+        searchBoxInputAnimation
+          .start({
+            width: 270,
+            transition: { ease: "easeInOut", duration: 0.3 },
+          })
+          .then(() => {
+            setTimeout(() => {
+              setFocus("keyword", { shouldSelect: true });
+            }, 1);
+          });
       } else {
         openModal();
       }
-    }, [inputAnimation, isSmallerEqual600px, openModal]);
+    }, [searchBoxInputAnimation, isSmallerEqual600px, openModal, setFocus]);
 
     const closeSearchBoxHandler = useCallback(() => {
       if (!isSmallerEqual600px && stateIsSearchBoxOpen) {
-        inputAnimation.start({
-          width: 40,
-          transition: { ease: "easeInOut", duration: 0.3 },
-          onAnimationEnd: () => setStateIsSearchBoxOpen(false),
-        });
+        searchBoxInputAnimation
+          .start({
+            width: 34,
+            transition: { ease: "easeInOut", duration: 0.3 },
+          })
+          .then(() => {
+            setStateIsSearchBoxOpen(false);
+          });
       } else if (isSmallerEqual600px && stateIsSearchBoxOpen) {
         setStateIsSearchBoxOpen(false);
         closeModal();
       }
-    }, [inputAnimation, isSmallerEqual600px, stateIsSearchBoxOpen, closeModal]);
+    }, [
+      searchBoxInputAnimation,
+      isSmallerEqual600px,
+      stateIsSearchBoxOpen,
+      closeModal,
+    ]);
 
-    const searchBoxClickAwayHander = useCallback(() => {
+    const searchBoxClickAwayHandler = useCallback(() => {
       if (!isSmallerEqual600px && stateIsSearchBoxOpen) {
-        inputAnimation.start({
-          width: 40,
-          transition: { ease: "easeInOut", duration: 0.3 },
-          onAnimationEnd: () => setStateIsSearchBoxOpen(false),
-        });
+        searchBoxInputAnimation
+          .start({
+            width: 34,
+            transition: { ease: "easeInOut", duration: 0.3 },
+          })
+          .then(() => {
+            setStateIsSearchBoxOpen(false);
+          });
       }
-    }, [inputAnimation, isSmallerEqual600px, stateIsSearchBoxOpen]);
+    }, [searchBoxInputAnimation, isSmallerEqual600px, stateIsSearchBoxOpen]);
 
-    const refSearchBox = useRef<HTMLDivElement | null>(null);
-    useClickAway(refSearchBox, searchBoxClickAwayHander, ["click"]);
+    useClickAway(refSearchBox, searchBoxClickAwayHandler, ["click"]);
 
-    const searchInputPlaceholderText = "Search for a movie or a TV show...";
+    useEffect(() => {
+      window.addEventListener("resize", searchBoxClickAwayHandler);
+      return () =>
+        window.removeEventListener("resize", searchBoxClickAwayHandler);
+    }, [searchBoxClickAwayHandler]);
 
-    const [stateSearchBoxInputValue, setStateSearchBoxInputValue] =
-      useState<string>("");
+    // const searchBoxInputValue = watch("keyword");
+    // const searchBoxModalInputValue = watch("keywordModal");
 
-    const onChangeSearchBoxInput = useCallback((event: React.ChangeEvent) => {
-      const element = event.target as HTMLInputElement;
-      setStateSearchBoxInputValue(element.value);
-    }, []);
+    // // Sync searchBoxModalInput when searchBoxInput changes
+    // useEffect(() => {
+    //   if (searchBoxInputValue !== searchBoxModalInputValue) {
+    //     setValue("keywordModal", searchBoxInputValue);
+    //   }
+    // }, [searchBoxInputValue, searchBoxModalInputValue, setValue]);
+
+    // // Sync searchBoxInput when searchBoxModalInput changes
+    // useEffect(() => {
+    //   if (searchBoxModalInputValue !== searchBoxInputValue) {
+    //     setValue("keyword", searchBoxModalInputValue);
+    //   }
+    // }, [searchBoxModalInputValue, searchBoxInputValue, setValue]);
+
+    // const [stateSearchBoxInputValue, setStateSearchBoxInputValue] =
+    //   useState<string>("");
+
+    // const onChangeSearchBoxInput = useCallback((event: React.ChangeEvent) => {
+    //   const element = event.target as HTMLInputElement;
+    //   setStateSearchBoxInputValue(element.value);
+    //   console.log(element.value);
+    // }, []);
+
+    const searchBoxInputPlaceholderText = "Search for a movie or a TV show...";
 
     return (
       <>
@@ -361,17 +505,25 @@ export const HeaderNavBar = withMemoAndRef<
           <HeaderNavBarColumn>
             <HeaderNavBarSearchBox
               ref={refSearchBox}
-              animate={inputAnimation}
+              animate={searchBoxInputAnimation}
               isSearchBoxOpen={stateIsSearchBoxOpen}
               onClick={openSearchBoxHandler}
+              onSubmit={handleSubmit(onValid)}
             >
-              <HeaderNavBarSearchIcon isSearchBoxOpen={stateIsSearchBoxOpen} />
-              <HeaderNavBarSearchInputContainer>
-                <HeaderNavBarSearchInput
-                  placeholder={searchInputPlaceholderText}
-                  size={searchInputPlaceholderText.length}
+              <HeaderNavBarSearchBoxSearchButton
+                type="submit"
+                isSearchBoxOpen={stateIsSearchBoxOpen}
+              >
+                <HeaderNavBarSearchBoxIcon />
+              </HeaderNavBarSearchBoxSearchButton>
+              <HeaderNavBarSearchBoxInputContainer>
+                <HeaderNavBarSearchBoxInput
+                  placeholder={searchBoxInputPlaceholderText}
+                  autoComplete="off"
+                  allowClear
+                  {...searchBoxInputFormProps}
                 />
-              </HeaderNavBarSearchInputContainer>
+              </HeaderNavBarSearchBoxInputContainer>
             </HeaderNavBarSearchBox>
           </HeaderNavBarColumn>
         </HeaderNavBarBase>
@@ -384,19 +536,18 @@ export const HeaderNavBar = withMemoAndRef<
               Search
             </HeaderNavBarSearchBoxModalTitle>
           }
-          footer={[
-            <Button key="submit" type="primary" onClick={() => {}}>
-              Search
-            </Button>,
-          ]}
+          footer={null}
           onCancel={closeSearchBoxHandler}
         >
-          <HeaderNavBarSearchBoxModalBody>
+          <HeaderNavBarSearchBoxModalBody onSubmit={handleSubmit(onValid)}>
             <HeaderNavBarSearchBoxModalInput
-              ref={refSearchBoxModalInput}
-              placeholder={searchInputPlaceholderText}
-              value={stateSearchBoxInputValue}
-              onChange={onChangeSearchBoxInput}
+              ref={searchBoxModalInputCbRef}
+              placeholder={searchBoxInputPlaceholderText}
+              autoComplete="off"
+              allowClear
+              value={searchInputValue}
+              onSearch={(value, event) => {}}
+              {...searchBoxModalInputFormProps}
             />
           </HeaderNavBarSearchBoxModalBody>
         </HeaderNavBarSearchBoxModal>

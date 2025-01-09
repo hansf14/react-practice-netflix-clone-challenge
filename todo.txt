@@ -1,0 +1,2 @@
+1. open search box -> auto focus
+2. search box 안 닫고 화면 줄이면 헤더 레이아웃 깨지는 버그

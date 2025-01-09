@@ -124,7 +124,7 @@ const fetchOptions = {
   },
 };
 
-export interface GetMoviesNowPlayingResultMovie {
+export interface Movie {
   adult: boolean;
   backdrop_path: string | undefined;
   poster_path: string | undefined;
@@ -140,6 +140,20 @@ export interface GetMoviesNowPlayingResultMovie {
   vote_average: number;
   vote_count: number;
 }
+
+export interface GetMoviesNowPlayingResult {
+  dates: {
+    maximum: string;
+    minimum: string;
+  };
+  page: number;
+  total_pages: number;
+  results: GetMoviesNowPlayingResultMovie[];
+  total_results: number;
+}
+
+export interface GetMoviesNowPlayingResultMovie extends Movie {}
+
 // {
 //   id: 558449;
 //   backdrop_path: "/euYIwmwkmz95mnXvufEmbL6ovhZ.jpg";
@@ -157,15 +171,21 @@ export interface GetMoviesNowPlayingResultMovie {
 //   video: false;
 // };
 
-export interface GetMoviesNowPlayingResult {
-  dates: {
-    maximum: string;
-    minimum: string;
-  };
+export interface GetMoviesPopularResult {
   page: number;
   total_pages: number;
   results: GetMoviesNowPlayingResultMovie[];
   total_results: number;
+}
+
+export interface GetMoviesPopularResultMovie extends Movie {}
+
+export async function getMoviesPopular() {
+  const response = await fetch(
+    `${API_BASE_URL}/movie/popular?language=en-US&page=1`,
+    fetchOptions,
+  );
+  return response.json() as unknown as GetMoviesPopularResult;
 }
 
 export async function getMoviesNowPlaying() {

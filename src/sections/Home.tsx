@@ -248,7 +248,7 @@ function Home() {
         element?.outerHTML ? (
           parse(element?.outerHTML)
         ) : (
-          <img src={netflixInitialLogo} />
+          <img src={netflixInitialLogo} /> // Fallback
         ),
       );
       setStatePreloadedImages(preloadedImageComponents);
@@ -269,7 +269,7 @@ function Home() {
 
   const navigate = useNavigate();
 
-  const onOpenNowPlaygMoviesItem = useCallback<OnOpenItem>(
+  const onOpenNowPlayingMoviesItem = useCallback<OnOpenItem>(
     ({ id }) => {
       navigate(`movies/${id}`);
     },
@@ -310,7 +310,7 @@ function Home() {
             images={statePreloadedImages}
             pathMatchPattern={`${basePath}/movies/:movieId`}
             pathMatchParam="movieId"
-            onOpenItem={onOpenNowPlaygMoviesItem}
+            onOpenItem={onOpenNowPlayingMoviesItem}
             onCloseItem={onCloseNowPlayingMoviesItem}
           />
         </>
