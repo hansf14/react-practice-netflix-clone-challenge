@@ -13,6 +13,8 @@ import { css, styled } from "styled-components";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
 import { StyledComponentProps } from "@/utils";
 import { CaretLeftFill, CaretRightFill } from "react-bootstrap-icons";
+import { useResizeObserver } from "usehooks-ts";
+import { throttle } from "lodash-es";
 
 const CarouselBase = styled.div`
   width: 100%;
@@ -26,11 +28,14 @@ const CarouselBase = styled.div`
 const CarouselRows = styled(motion.div)`
   display: flex;
   width: fit-content;
-`;
 
-export type RowProps = {
-  itemCntPerRow: number;
-};
+  gap: 10px;
+  @media (max-width: 600px) {
+    & {
+      gap: 0;
+    }
+  }
+`;
 
 const CarouselRow = styled.div`
   flex: 0 0 auto;
@@ -44,9 +49,13 @@ const CarouselRow = styled.div`
   }
 `;
 
+export type CarouselRowContentProps = {
+  itemCntPerRow: number;
+};
+
 const CarouselRowContent = styled(motion.div).withConfig({
   shouldForwardProp: (prop) => !["itemCntPerRow"].includes(prop),
-})<RowProps>`
+})<CarouselRowContentProps>`
   transform-style: preserve-3d;
   width: 100%;
 
@@ -236,13 +245,18 @@ const itemBoxVariants: Variants = {
 const itemTooltipVariants: Variants = {
   hover: {
     opacity: 1,
-    y: "100%",
+    y: "calc(100% - 1px)", // prevent subpixel: 1px
     transition: {
       type: "tween",
       delay: 0.5,
       duration: 0.3,
     },
   },
+};
+
+type Size = {
+  width?: number;
+  height?: number;
 };
 
 export type CarouselItem = {
@@ -286,6 +300,8 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
 
     const isSmallerEqual600px = useMedia("(max-width: 600px)");
     const totalCntItem = items.length;
+    const defaultAnimationDuration = 1;
+    const gap = isSmallerEqual600px ? 10 : 0;
 
     const itemCntPerRow = isSmallerEqual600px ? 4 : 5;
     const maxRowIndex = Math.ceil(totalCntItem / itemCntPerRow) - 1;
@@ -293,45 +309,70 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
 
     const rowContentAnimation = useAnimation();
 
+    const refSize = useRef<Size>({ width: undefined, height: undefined });
+    const onResize = useMemo(
+      () =>
+        throttle(
+          ({ width, height }: Size) => {
+            refSize.current = { width, height };
+          },
+          100,
+          { leading: true },
+        ),
+      [],
+    );
+
+    useResizeObserver({
+      ref: refBase,
+      box: "border-box",
+      onResize,
+    });
+
     const increaseCurrentRowIndex = useCallback(() => {
       const nextRowIndex =
         stateCurrentRowIndex >= maxRowIndex ? 0 : stateCurrentRowIndex + 1;
 
-      rowContentAnimation.start({
-        x: -nextRowIndex * document.documentElement.clientWidth,
-        transition: {
-          ease: "easeInOut",
-          duration: 0.5,
-        },
-      });
+      if (refSize.current.width) {
+        rowContentAnimation.start({
+          x:
+            -nextRowIndex * refSize.current.width +
+            (nextRowIndex > 0 ? -nextRowIndex * gap : 0),
+          transition: {
+            ease: "easeInOut",
+            duration: defaultAnimationDuration,
+          },
+        });
+      }
       setStateCurrentRowIndex(nextRowIndex);
-    }, [stateCurrentRowIndex, rowContentAnimation, maxRowIndex]);
+    }, [gap, stateCurrentRowIndex, rowContentAnimation, maxRowIndex]);
 
     const decreaseCurrentRowIndex = useCallback(() => {
       const prevRowIndex =
         stateCurrentRowIndex <= 0 ? maxRowIndex : stateCurrentRowIndex - 1;
 
-      rowContentAnimation.start({
-        x: -prevRowIndex * document.documentElement.clientWidth,
-        transition: {
-          ease: "easeInOut",
-          duration: 0.5,
-        },
-      });
+      if (refSize.current.width) {
+        rowContentAnimation.start({
+          x:
+            -prevRowIndex * refSize.current.width +
+            (prevRowIndex > 0 ? -prevRowIndex * gap : 0),
+          transition: {
+            ease: "easeInOut",
+            duration: defaultAnimationDuration,
+          },
+        });
+      }
       setStateCurrentRowIndex(prevRowIndex);
-    }, [stateCurrentRowIndex, rowContentAnimation, maxRowIndex]);
+    }, [gap, stateCurrentRowIndex, rowContentAnimation, maxRowIndex]);
 
     const changeCurrentRowIndexTo = useCallback(
       ({
         indexTo,
-        animationDuration = 0.5,
+        animationDuration = defaultAnimationDuration,
       }: {
         indexTo: number;
         animationDuration?: number;
       }) =>
         () => {
-          console.log(indexTo, maxRowIndex);
-
           if (
             indexTo === stateCurrentRowIndex ||
             indexTo < 0 ||
@@ -342,16 +383,20 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
 
           console.log("DOH");
 
-          rowContentAnimation.start({
-            x: -indexTo * document.documentElement.clientWidth,
-            transition: {
-              ease: "easeInOut",
-              duration: animationDuration,
-            },
-          });
+          if (refSize.current.width) {
+            rowContentAnimation.start({
+              x:
+                -indexTo * refSize.current.width +
+                (indexTo > 0 ? -indexTo * gap : 0),
+              transition: {
+                ease: "easeInOut",
+                duration: animationDuration,
+              },
+            });
+          }
           setStateCurrentRowIndex(indexTo);
         },
-      [stateCurrentRowIndex, rowContentAnimation, maxRowIndex],
+      [gap, stateCurrentRowIndex, rowContentAnimation, maxRowIndex],
     );
 
     // * Max row index edge case handling
@@ -370,13 +415,17 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
 
     const windowResizeHandler = useCallback(() => {
       console.log(stateCurrentRowIndex);
-      rowContentAnimation.start({
-        x: -stateCurrentRowIndex * document.documentElement.clientWidth,
-        transition: {
-          duration: 0,
-        },
-      });
-    }, [stateCurrentRowIndex, rowContentAnimation]);
+      if (refSize.current.width) {
+        rowContentAnimation.start({
+          x:
+            -stateCurrentRowIndex * refSize.current.width +
+            (stateCurrentRowIndex > 0 ? -stateCurrentRowIndex * gap : 0),
+          transition: {
+            duration: 0,
+          },
+        });
+      }
+    }, [gap, stateCurrentRowIndex, rowContentAnimation]);
 
     useEffect(() => {
       window.addEventListener("resize", windowResizeHandler);

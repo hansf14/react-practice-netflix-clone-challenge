@@ -1,3 +1,5 @@
-2. search box 안 닫고 화면 줄이면 헤더 레이아웃 깨지는 버그
+해결: search box 안 닫고 화면 줄이면 헤더 레이아웃 깨지는 버그
 해결: open search box -> auto focus
 해결: Carousel: 작은화면에서 5 index에 있다가 스크린 최대화 시키면 index가 4에 위치하게 되는데 아무 row도 출력되지 않는 버그
+해결 1. Carousel gap 존재할 때 row마다 붙어있음
+해결 2. Carousel 맨 마지막꺼가 이상하게 작은 화면에서 스크롤을 유발시키면서 다른 슬라이더들도 망가져버리는 버그

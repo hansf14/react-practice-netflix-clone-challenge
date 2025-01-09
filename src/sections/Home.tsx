@@ -7,6 +7,7 @@ import {
   getMoviesPopular,
   GetMoviesPopularResult,
   getMoviesTopRated,
+  getMoviesUpcoming,
   IMAGE_FALLBACK_URL,
 } from "@/api";
 import { basePath } from "@/router";
@@ -291,7 +292,7 @@ function Home() {
     data: dataNowPlaying,
     isLoading: isLoadingNowPlaying,
     isSuccess: isSuccessNowPlaying,
-    isError: isErrorNowPlaying,
+    // isError: isErrorNowPlaying,
   } = useQuery({
     queryKey: ["getMoviesNowPlaying"],
     queryFn: getMoviesNowPlaying,
@@ -299,9 +300,9 @@ function Home() {
 
   const {
     data: dataPopular,
-    isLoading: isLoadingPopular,
+    // isLoading: isLoadingPopular,
     isSuccess: isSuccessPopular,
-    isError: isErrorPopular,
+    // isError: isErrorPopular,
   } = useQuery({
     queryKey: ["getMoviesPopular"],
     queryFn: getMoviesPopular,
@@ -309,23 +310,23 @@ function Home() {
 
   const {
     data: dataTopRated,
-    isLoading: isLoadingTopRated,
+    // isLoading: isLoadingTopRated,
     isSuccess: isSuccessTopRated,
-    isError: isErrorTopRated,
+    // isError: isErrorTopRated,
   } = useQuery({
     queryKey: ["getMoviesTopRated"],
     queryFn: getMoviesTopRated,
   });
 
-  // const {
-  //   data: dataPopular,
-  //   isLoading: isLoadingPopular,
-  //   isSuccess: isSuccessPopular,
-  //   isError: isErrorPopular,
-  // } = useQuery({
-  //   queryKey: ["getMoviesPopular"],
-  //   queryFn: getMoviesPopular,
-  // });
+  const {
+    data: dataUpcoming,
+    // isLoading: isLoadingUpcoming,
+    isSuccess: isSuccessUpcoming,
+    // isError: isErrorUpcoming,
+  } = useQuery({
+    queryKey: ["getMoviesUpcoming"],
+    queryFn: getMoviesUpcoming,
+  });
 
   // console.log(dataNowPlaying);
   // console.log(dataPopular);
@@ -357,6 +358,10 @@ function Home() {
 
   const { images: imagesTopRated, items: itemsTopRated } = usePreprocessData({
     data: dataTopRated,
+  });
+
+  const { images: imagesUpcoming, items: itemsUpcoming } = usePreprocessData({
+    data: dataUpcoming,
   });
 
   return (
@@ -415,7 +420,7 @@ function Home() {
             />
           </Slider>
         )}
-        {isSuccessPopular && dataPopular.results.length && (
+        {isSuccessTopRated && dataTopRated.results.length && (
           <Slider>
             <SliderTitle>Top Rated</SliderTitle>
             <Carousel
@@ -428,8 +433,20 @@ function Home() {
             />
           </Slider>
         )}
+        {isSuccessUpcoming && dataUpcoming.results.length && (
+          <Slider>
+            <SliderTitle>Upcoming</SliderTitle>
+            <Carousel
+              items={itemsUpcoming}
+              images={imagesUpcoming}
+              pathMatchPattern={`${basePath}/movies/:movieId`}
+              pathMatchParam="movieId"
+              onOpenItem={onOpenMoviesItem}
+              onCloseItem={onCloseMoviesItem}
+            />
+          </Slider>
+        )}
       </Sliders>
-      {isErrorNowPlaying && <div>Error</div>}
     </HomeBase>
   );
 }

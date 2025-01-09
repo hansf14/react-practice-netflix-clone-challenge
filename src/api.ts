@@ -210,18 +210,18 @@ export async function getMoviesPopular() {
   return response.json() as unknown as GetMoviesPopularResult;
 }
 
-export async function getMoviesTopRated() {
-  const response = await fetch(
-    `${API_BASE_URL}/movie/top_rated?language=en-US&page=1`,
-    fetchOptions,
-  );
-  return response.json() as unknown as GetMoviesTopRatedResult;
-}
-
 export async function getMoviesUpcoming() {
   const response = await fetch(
     `${API_BASE_URL}/movie/upcoming?language=en-US&page=1`,
     fetchOptions,
   );
   return response.json() as unknown as GetMoviesUpcomingResult;
+}
+
+export async function getMoviesTopRated() {
+  const response = await fetch(
+    `${API_BASE_URL}/movie/top_rated?language=en-US&page=1`,
+    fetchOptions,
+  );
+  return response.json() as unknown as GetMoviesTopRatedResult;
 }
