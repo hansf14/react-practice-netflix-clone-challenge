@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import parse from "html-react-parser";
-import { getImageUrl, getMoviesNowPlaying, IMAGE_FALLBACK_URL } from "@/api";
+import {
+  getImageUrl,
+  getMoviesNowPlaying,
+  GetMoviesNowPlayingResult,
+  getMoviesPopular,
+  GetMoviesPopularResult,
+  getMoviesTopRated,
+  IMAGE_FALLBACK_URL,
+} from "@/api";
 import { basePath } from "@/router";
 import { preloadAllImages } from "@/utils";
 import { useQuery } from "react-query";
@@ -87,13 +95,13 @@ const BannerContentMobile = styled.div`
   }
 `;
 
-export type TitleProps = {
+export type BannerTitleProps = {
   textLength: number;
 };
 
-const Title = styled.h2.withConfig({
+const BannerTitle = styled.h2.withConfig({
   shouldForwardProp: (prop) => !["textLength"].includes(prop),
-})<TitleProps>`
+})<BannerTitleProps>`
   margin-bottom: 15px;
   @media (max-width: 600px) {
     & {
@@ -154,7 +162,7 @@ const Title = styled.h2.withConfig({
   }}
 `;
 
-const Overview = styled.div`
+const BannerOverview = styled.div`
   width: 50%;
   @media (min-width: 1901px) {
     & {
@@ -185,6 +193,13 @@ const Overview = styled.div`
   }
 `;
 
+const Sliders = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const Slider = styled.div``;
+
 const SliderTitle = styled.h1`
   margin: 15px 0 15px 10%;
   font-size: 26px;
@@ -201,17 +216,16 @@ const SliderTitle = styled.h1`
   }
 `;
 
-function Home() {
-  const { data, error, isLoading, isSuccess, isError } = useQuery({
-    queryKey: ["getMoviesNowPlaying"],
-    queryFn: getMoviesNowPlaying,
-  });
-  console.log(data);
-
+const usePreprocessData = ({
+  data,
+}: {
+  data: GetMoviesNowPlayingResult | GetMoviesPopularResult | undefined;
+}) => {
   const bannerMovieImageSrcPathSegment =
     data && data.results.length
       ? (data.results[0].backdrop_path ?? data.results[0].poster_path ?? null)
       : null;
+
   const bannerMovieImageSrc = !!bannerMovieImageSrcPathSegment
     ? getImageUrl({
         pathSegment: bannerMovieImageSrcPathSegment,
@@ -255,9 +269,7 @@ function Home() {
     })();
   }, [moviePosterImageSrcArr]);
 
-  const isSmallerEqual600px = useMedia("(max-width: 600px)");
-
-  const nowPlayingMovies = useMemo(() => {
+  const items = useMemo(() => {
     if (!data) {
       return [];
     }
@@ -267,55 +279,157 @@ function Home() {
     }));
   }, [data]);
 
+  return {
+    bannerMovieImageSrc,
+    images: statePreloadedImages,
+    items,
+  };
+};
+
+function Home() {
+  const {
+    data: dataNowPlaying,
+    isLoading: isLoadingNowPlaying,
+    isSuccess: isSuccessNowPlaying,
+    isError: isErrorNowPlaying,
+  } = useQuery({
+    queryKey: ["getMoviesNowPlaying"],
+    queryFn: getMoviesNowPlaying,
+  });
+
+  const {
+    data: dataPopular,
+    isLoading: isLoadingPopular,
+    isSuccess: isSuccessPopular,
+    isError: isErrorPopular,
+  } = useQuery({
+    queryKey: ["getMoviesPopular"],
+    queryFn: getMoviesPopular,
+  });
+
+  const {
+    data: dataTopRated,
+    isLoading: isLoadingTopRated,
+    isSuccess: isSuccessTopRated,
+    isError: isErrorTopRated,
+  } = useQuery({
+    queryKey: ["getMoviesTopRated"],
+    queryFn: getMoviesTopRated,
+  });
+
+  // const {
+  //   data: dataPopular,
+  //   isLoading: isLoadingPopular,
+  //   isSuccess: isSuccessPopular,
+  //   isError: isErrorPopular,
+  // } = useQuery({
+  //   queryKey: ["getMoviesPopular"],
+  //   queryFn: getMoviesPopular,
+  // });
+
+  // console.log(dataNowPlaying);
+  // console.log(dataPopular);
+
+  const isSmallerEqual600px = useMedia("(max-width: 600px)");
+
   const navigate = useNavigate();
 
-  const onOpenNowPlayingMoviesItem = useCallback<OnOpenItem>(
+  const onOpenMoviesItem = useCallback<OnOpenItem>(
     ({ id }) => {
       navigate(`movies/${id}`);
     },
     [navigate],
   );
 
-  const onCloseNowPlayingMoviesItem = useCallback<OnCloseItem>(() => {
+  const onCloseMoviesItem = useCallback<OnCloseItem>(() => {
     navigate(-1);
   }, [navigate]);
 
+  const {
+    bannerMovieImageSrc,
+    images: imagesNowPlaying,
+    items: itemsNowPlaying,
+  } = usePreprocessData({ data: dataNowPlaying });
+
+  const { images: imagesPopular, items: itemsPopular } = usePreprocessData({
+    data: dataPopular,
+  });
+
+  const { images: imagesTopRated, items: itemsTopRated } = usePreprocessData({
+    data: dataTopRated,
+  });
+
   return (
     <HomeBase>
-      {isLoading && <Loader>Loading...</Loader>}
-      {isSuccess && data.results.length && (
+      {isLoadingNowPlaying && <Loader>Loading...</Loader>}
+      {isSuccessNowPlaying && dataNowPlaying.results.length && (
         <>
           <Banner
             // onClick={increaseVisibleRowIndex}
             backgroundImageSrc={bannerMovieImageSrc}
           >
             <BannerContent>
-              <Title textLength={data.results[0].title.length}>
-                {data.results[0].title}
-              </Title>
+              <BannerTitle textLength={dataNowPlaying.results[0].title.length}>
+                {dataNowPlaying.results[0].title}
+              </BannerTitle>
               {!isSmallerEqual600px && (
-                <Overview>{data.results[0].overview}</Overview>
+                <BannerOverview>
+                  {dataNowPlaying.results[0].overview}
+                </BannerOverview>
               )}
             </BannerContent>
           </Banner>
           {isSmallerEqual600px && (
             <BannerContentMobile>
-              <Overview>{data.results[0].overview}</Overview>
+              <BannerOverview>
+                {dataNowPlaying.results[0].overview}
+              </BannerOverview>
             </BannerContentMobile>
           )}
-
-          <SliderTitle>Now Playing</SliderTitle>
-          <Carousel
-            items={nowPlayingMovies}
-            images={statePreloadedImages}
-            pathMatchPattern={`${basePath}/movies/:movieId`}
-            pathMatchParam="movieId"
-            onOpenItem={onOpenNowPlayingMoviesItem}
-            onCloseItem={onCloseNowPlayingMoviesItem}
-          />
         </>
       )}
-      {isError && <div>Error</div>}
+      <Sliders>
+        {isSuccessNowPlaying && dataNowPlaying.results.length && (
+          <Slider>
+            <SliderTitle>Now Playing</SliderTitle>
+            <Carousel
+              items={itemsNowPlaying}
+              images={imagesNowPlaying}
+              pathMatchPattern={`${basePath}/movies/:movieId`}
+              pathMatchParam="movieId"
+              onOpenItem={onOpenMoviesItem}
+              onCloseItem={onCloseMoviesItem}
+            />
+          </Slider>
+        )}
+        {isSuccessPopular && dataPopular.results.length && (
+          <Slider>
+            <SliderTitle>Popular</SliderTitle>
+            <Carousel
+              items={itemsPopular}
+              images={imagesPopular}
+              pathMatchPattern={`${basePath}/movies/:movieId`}
+              pathMatchParam="movieId"
+              onOpenItem={onOpenMoviesItem}
+              onCloseItem={onCloseMoviesItem}
+            />
+          </Slider>
+        )}
+        {isSuccessPopular && dataPopular.results.length && (
+          <Slider>
+            <SliderTitle>Top Rated</SliderTitle>
+            <Carousel
+              items={itemsTopRated}
+              images={imagesTopRated}
+              pathMatchPattern={`${basePath}/movies/:movieId`}
+              pathMatchParam="movieId"
+              onOpenItem={onOpenMoviesItem}
+              onCloseItem={onCloseMoviesItem}
+            />
+          </Slider>
+        )}
+      </Sliders>
+      {isErrorNowPlaying && <div>Error</div>}
     </HomeBase>
   );
 }

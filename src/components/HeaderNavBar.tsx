@@ -9,12 +9,13 @@ import {
 } from "motion/react";
 import { Link, useMatch } from "react-router-dom";
 import { SearchOutlined } from "@ant-design/icons";
-import { Button, Input, InputRef, Modal } from "antd";
+import { Input, InputRef, Modal } from "antd";
 import { useClickAway, useMedia } from "react-use";
 import { basePath } from "@/router";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
 import { SmartOmit, StyledComponentProps } from "@/utils";
 import { SubmitHandler, useForm } from "react-hook-form";
+import { SearchProps } from "antd/es/input";
 
 const HeaderNavBarBase = styled(motion.nav)`
   z-index: 1000;
@@ -211,26 +212,12 @@ const HeaderNavBarSearchBoxModalBody = styled.form`
 `;
 
 const HeaderNavBarSearchBoxModalInput = styled(Input.Search)`
-  white-space: nowrap;
-  overflow: hidden;
-
-  font-weight: bold;
-  color: #111;
-
-  &::placeholder {
-    font-weight: bold;
-    color: #ccc;
-  }
-`;
-
-const HeaderNavBarSearchBoxModalSearchButton = styled(Button)`
   &&& {
-    font: inherit;
     font-weight: bold;
+    color: inherit;
 
-    svg {
-      width: 26px;
-      height: 26px;
+    input::placeholder {
+      color: #999;
     }
   }
 `;
@@ -294,8 +281,8 @@ export const HeaderNavBar = withMemoAndRef<
       useState<boolean>(false);
     const [stateIsModalOpen, setStateIsModalOpen] = useState<boolean>(false);
 
-    const refSearchBoxModalInput = useRef<InputRef | null>(null);
     const refSearchBox = useRef<HTMLFormElement | null>(null);
+    const refSearchBoxModalInput = useRef<InputRef | null>(null);
 
     const { scrollY } = useScroll();
 
@@ -431,31 +418,16 @@ export const HeaderNavBar = withMemoAndRef<
         window.removeEventListener("resize", searchBoxClickAwayHandler);
     }, [searchBoxClickAwayHandler]);
 
-    // const searchBoxInputValue = watch("keyword");
-    // const searchBoxModalInputValue = watch("keywordModal");
-
-    // // Sync searchBoxModalInput when searchBoxInput changes
-    // useEffect(() => {
-    //   if (searchBoxInputValue !== searchBoxModalInputValue) {
-    //     setValue("keywordModal", searchBoxInputValue);
-    //   }
-    // }, [searchBoxInputValue, searchBoxModalInputValue, setValue]);
-
-    // // Sync searchBoxInput when searchBoxModalInput changes
-    // useEffect(() => {
-    //   if (searchBoxModalInputValue !== searchBoxInputValue) {
-    //     setValue("keyword", searchBoxModalInputValue);
-    //   }
-    // }, [searchBoxModalInputValue, searchBoxInputValue, setValue]);
-
-    // const [stateSearchBoxInputValue, setStateSearchBoxInputValue] =
-    //   useState<string>("");
-
-    // const onChangeSearchBoxInput = useCallback((event: React.ChangeEvent) => {
-    //   const element = event.target as HTMLInputElement;
-    //   setStateSearchBoxInputValue(element.value);
-    //   console.log(element.value);
-    // }, []);
+    const onSearchModalInputHandler = useCallback<
+      NonNullable<SearchProps["onSearch"]>
+    >(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      (value, event, info) => {
+        // console.log(value, event, info);
+        handleSubmit(onValid);
+      },
+      [handleSubmit, onValid],
+    );
 
     const searchBoxInputPlaceholderText = "Search for a movie or a TV show...";
 
@@ -546,7 +518,7 @@ export const HeaderNavBar = withMemoAndRef<
               autoComplete="off"
               allowClear
               value={searchInputValue}
-              onSearch={(value, event) => {}}
+              onSearch={onSearchModalInputHandler}
               {...searchBoxModalInputFormProps}
             />
           </HeaderNavBarSearchBoxModalBody>

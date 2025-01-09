@@ -148,11 +148,9 @@ export interface GetMoviesNowPlayingResult {
   };
   page: number;
   total_pages: number;
-  results: GetMoviesNowPlayingResultMovie[];
+  results: Movie[];
   total_results: number;
 }
-
-export interface GetMoviesNowPlayingResultMovie extends Movie {}
 
 // {
 //   id: 558449;
@@ -174,11 +172,35 @@ export interface GetMoviesNowPlayingResultMovie extends Movie {}
 export interface GetMoviesPopularResult {
   page: number;
   total_pages: number;
-  results: GetMoviesNowPlayingResultMovie[];
+  results: Movie[];
   total_results: number;
 }
 
-export interface GetMoviesPopularResultMovie extends Movie {}
+export interface GetMoviesTopRatedResult {
+  page: number;
+  total_pages: number;
+  results: Movie[];
+  total_results: number;
+}
+
+export interface GetMoviesUpcomingResult {
+  dates: {
+    maximum: string;
+    minimum: string;
+  };
+  page: number;
+  total_pages: number;
+  results: Movie[];
+  total_results: number;
+}
+
+export async function getMoviesNowPlaying() {
+  const response = await fetch(
+    `${API_BASE_URL}/movie/now_playing?language=en-US&page=1`,
+    fetchOptions,
+  );
+  return response.json() as unknown as GetMoviesNowPlayingResult;
+}
 
 export async function getMoviesPopular() {
   const response = await fetch(
@@ -188,10 +210,18 @@ export async function getMoviesPopular() {
   return response.json() as unknown as GetMoviesPopularResult;
 }
 
-export async function getMoviesNowPlaying() {
+export async function getMoviesTopRated() {
   const response = await fetch(
-    `${API_BASE_URL}/movie/now_playing?language=en-US&page=1`,
+    `${API_BASE_URL}/movie/top_rated?language=en-US&page=1`,
     fetchOptions,
   );
-  return response.json() as unknown as GetMoviesNowPlayingResult;
+  return response.json() as unknown as GetMoviesTopRatedResult;
+}
+
+export async function getMoviesUpcoming() {
+  const response = await fetch(
+    `${API_BASE_URL}/movie/upcoming?language=en-US&page=1`,
+    fetchOptions,
+  );
+  return response.json() as unknown as GetMoviesUpcomingResult;
 }

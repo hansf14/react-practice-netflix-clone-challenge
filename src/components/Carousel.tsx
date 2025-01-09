@@ -291,12 +291,6 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     const maxRowIndex = Math.ceil(totalCntItem / itemCntPerRow) - 1;
     const [stateCurrentRowIndex, setStateCurrentRowIndex] = useState<number>(0);
 
-    useEffect(() => {
-      if (stateCurrentRowIndex > maxRowIndex) {
-        setStateCurrentRowIndex(maxRowIndex);
-      }
-    }, [stateCurrentRowIndex, maxRowIndex]);
-
     const rowContentAnimation = useAnimation();
 
     const increaseCurrentRowIndex = useCallback(() => {
@@ -328,8 +322,16 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     }, [stateCurrentRowIndex, rowContentAnimation, maxRowIndex]);
 
     const changeCurrentRowIndexTo = useCallback(
-      ({ indexTo }: { indexTo: number }) =>
+      ({
+        indexTo,
+        animationDuration = 0.5,
+      }: {
+        indexTo: number;
+        animationDuration?: number;
+      }) =>
         () => {
+          console.log(indexTo, maxRowIndex);
+
           if (
             indexTo === stateCurrentRowIndex ||
             indexTo < 0 ||
@@ -338,11 +340,13 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
             return;
           }
 
+          console.log("DOH");
+
           rowContentAnimation.start({
             x: -indexTo * document.documentElement.clientWidth,
             transition: {
               ease: "easeInOut",
-              duration: 0.5,
+              duration: animationDuration,
             },
           });
           setStateCurrentRowIndex(indexTo);
@@ -350,7 +354,22 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
       [stateCurrentRowIndex, rowContentAnimation, maxRowIndex],
     );
 
+    // * Max row index edge case handling
+    // When resize happens at small screen to big screen and the max index gets changed from 4 to 3 because the images per row gets changed.
+    useEffect(() => {
+      if (stateCurrentRowIndex > maxRowIndex) {
+        console.log("stateCurrentRowIndex:", stateCurrentRowIndex);
+        console.log("maxRowIndex:", maxRowIndex);
+
+        changeCurrentRowIndexTo({
+          indexTo: maxRowIndex,
+          animationDuration: 0,
+        })();
+      }
+    }, [stateCurrentRowIndex, maxRowIndex, changeCurrentRowIndexTo]);
+
     const windowResizeHandler = useCallback(() => {
+      console.log(stateCurrentRowIndex);
       rowContentAnimation.start({
         x: -stateCurrentRowIndex * document.documentElement.clientWidth,
         transition: {
