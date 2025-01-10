@@ -86,11 +86,15 @@ const GlobalStyle = createGlobalStyle`
     font-style: normal;
     word-break: break-word;
   }
-  body,
-  #root {
+  
+  // Override for antd modal global css injection "html body { overflow-y: hidden; width: calc(100%- 17px); }"
+  body:not(_):not(_):not(_) {
+    overflow-y: unset;
     width: 100%;
   }
+  
   #root {
+    width: 100%;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
