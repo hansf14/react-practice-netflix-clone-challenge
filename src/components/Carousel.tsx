@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useMatch } from "react-router-dom";
+import { useLocation, useMatch } from "react-router-dom";
 import { AnimatePresence, motion, useAnimation, Variants } from "motion/react";
 import { useMedia } from "react-use";
 import { css, styled } from "styled-components";
@@ -181,6 +181,7 @@ const CarouselControllerNumber = styled.div<CarouselControllerNumberProps>`
 `;
 
 const ModalContent = styled(motion.div)`
+  z-index: 10000;
   position: fixed;
   width: min(780px, 40%);
   height: 80vh;
@@ -195,6 +196,7 @@ const ModalContent = styled(motion.div)`
 `;
 
 const ModalOverlay = styled(motion.div)`
+  z-index: 9999;
   position: fixed;
   top: 0;
   width: 100%;
@@ -267,9 +269,17 @@ export type CarouselItem = {
 
 export type CarouselImage = React.ReactNode;
 
-export type OnOpenItem = ({ id, title }: CarouselItem) => void;
+export type OnOpenItemParams = {
+  id: string;
+  movieId: string;
+  title: string;
+};
 
-export type OnCloseItem = ({ id, title }: CarouselItem) => void;
+export interface OnCloseItemParams extends OnOpenItemParams {}
+
+export type OnOpenItem = ({ id, movieId, title }: OnOpenItemParams) => void;
+
+export type OnCloseItem = ({ id, movieId, title }: OnCloseItemParams) => void;
 
 export type CarouselProps = {
   id: string;
@@ -438,20 +448,25 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     }, [windowResizeHandler]);
 
     const onClickItem = useCallback(
-      ({ id, title }: CarouselItem) => {
-        onOpenItem?.({ id, title });
-      },
+      ({ id, movieId, title }: OnOpenItemParams) =>
+        () => {
+          onOpenItem?.({ id, movieId, title });
+        },
       [onOpenItem],
     );
 
     const onClickModalOverlay = useCallback(
-      ({ id, title }: CarouselItem) => {
-        onCloseItem?.({ id, title });
-      },
+      ({ id, movieId, title }: OnCloseItemParams) =>
+        () => {
+          onCloseItem?.({ id, movieId, title });
+        },
       [onCloseItem],
     );
 
     const pathMatch = useMatch(pathMatchPattern);
+    const location = useLocation();
+    const list = new URLSearchParams(location.search).get("list");
+    console.log(list);
 
     const selectedItemIndex = useMemo(
       () =>
@@ -530,12 +545,11 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                             variants={itemBoxVariants}
                             initial="initial"
                             whileHover="hover"
-                            onClick={() =>
-                              onClickItem({
-                                id: item.id,
-                                title: item.title,
-                              })
-                            }
+                            onClick={onClickItem({
+                              id,
+                              movieId: item.id.toString(),
+                              title: item.title,
+                            })}
                             onTapStart={onLayoutAnimationToModal({ index })}
                             // ㄴ onLayoutAnimationStart는 toModal 변하는 방향, fromModal 다시 되돌아오는 방향들 각각 시작할때 모두 발생해서 `onLayoutAnimationStart` 보다 `onTapStart`가 더 잘 맞는다.
                             onLayoutAnimationComplete={onLayoutAnimationFromModal(
@@ -586,15 +600,14 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
           </CarouselControllers>
         </CarouselBase>
         <AnimatePresence>
-          {pathMatch && selectedItem && (
+          {pathMatch && selectedItem && list === id && (
             <>
               <ModalOverlay
-                onClick={() =>
-                  onClickModalOverlay({
-                    id: selectedItem.id.toString(),
-                    title: selectedItem.title,
-                  })
-                }
+                onClick={onClickModalOverlay({
+                  id,
+                  movieId: selectedItem.id.toString(),
+                  title: selectedItem.title,
+                })}
                 animate={{
                   opacity: 1,
                 }}

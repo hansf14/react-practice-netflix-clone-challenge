@@ -202,6 +202,7 @@ const Slider = styled.div``;
 const SliderTitle = styled.h1`
   margin: 15px 0 15px 10%;
   font-size: 26px;
+  font-weight: bold;
 
   @media (max-width: 1000px) {
     & {
@@ -334,8 +335,9 @@ function Home() {
   const navigate = useNavigate();
 
   const onOpenMoviesItem = useCallback<OnOpenItem>(
-    ({ id }) => {
-      navigate(`movies/${id}`);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ({ id, movieId, title }) => {
+      navigate(`movies/${movieId}?list=${id}`);
     },
     [navigate],
   );
@@ -396,7 +398,7 @@ function Home() {
           <Slider>
             <SliderTitle>Now Playing</SliderTitle>
             <Carousel
-              id="nowPlaying"
+              id="now-playing"
               items={itemsNowPlaying}
               images={imagesNowPlaying}
               pathMatchPattern={`${basePath}/movies/:movieId`}
@@ -424,7 +426,7 @@ function Home() {
           <Slider>
             <SliderTitle>Top Rated</SliderTitle>
             <Carousel
-              id="topRated"
+              id="top-rated"
               items={itemsTopRated}
               images={imagesTopRated}
               pathMatchPattern={`${basePath}/movies/:movieId`}

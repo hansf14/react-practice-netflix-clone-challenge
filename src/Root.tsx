@@ -6,6 +6,7 @@ import { queryClient } from "@/queryClient";
 import { QueryClientProvider } from "react-query";
 import { ReactQueryDevtools } from "react-query/devtools";
 import { HeaderNavBar } from "@/components/HeaderNavBar";
+import { Footer } from "@/components/Footer";
 // import { RecoilRoot } from "recoil";
 // import RecoilNexus from "recoil-nexus";
 // import reactLogo from "./assets/react.svg"; // /src/assets/...
@@ -79,7 +80,6 @@ const GlobalStyle = createGlobalStyle`
   html {
     overflow-y: auto;
     width: 100%;
-    min-height: 100%;
 
     font-family: "Source Sans 3", sans-serif;
     font-optical-sizing: auto;
@@ -90,9 +90,15 @@ const GlobalStyle = createGlobalStyle`
   #root {
     width: 100%;
   }
+  #root {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
 `;
 
 const Layout = styled.main`
+  flex-grow: 1;
   overflow-x: hidden;
   width: 100%;
 
@@ -123,6 +129,7 @@ function Root() {
           <Layout>
             <HeaderNavBar />
             <Outlet />
+            <Footer />
           </Layout>
           <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
