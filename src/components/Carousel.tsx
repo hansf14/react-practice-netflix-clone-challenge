@@ -7,7 +7,13 @@ import {
   useState,
 } from "react";
 import { useLocation, useMatch } from "react-router-dom";
-import { AnimatePresence, motion, useAnimation, Variants } from "motion/react";
+import {
+  AnimatePresence,
+  motion,
+  MotionProps,
+  useAnimation,
+  Variants,
+} from "motion/react";
 import { useMedia } from "react-use";
 import { css, styled } from "styled-components";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
@@ -322,6 +328,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     const maxRowIndex = Math.ceil(totalCntItem / itemCntPerRow) - 1;
     const [stateCurrentRowIndex, setStateCurrentRowIndex] = useState<number>(0);
 
+    const rowsAnimation = useAnimation();
     const rowContentAnimation = useAnimation();
 
     const refSize = useRef<Size>({ width: undefined, height: undefined });
@@ -343,12 +350,12 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
       onResize,
     });
 
-    const increaseCurrentRowIndex = useCallback(() => {
+    const increaseCurrentRowIndex = useCallback(async () => {
       const nextRowIndex =
         stateCurrentRowIndex >= maxRowIndex ? 0 : stateCurrentRowIndex + 1;
 
       if (refSize.current.width) {
-        rowContentAnimation.start({
+        await rowsAnimation.start({
           x:
             -nextRowIndex * refSize.current.width +
             (nextRowIndex > 0 ? -nextRowIndex * gap : 0),
@@ -357,16 +364,31 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
             duration: defaultAnimationDuration,
           },
         });
+
+        // Snap to origin (go back to default position) after the rowsAnimation ends (slide animation)
+        await rowContentAnimation.start({
+          x: 0,
+          transition: {
+            ease: "linear",
+            duration: 0,
+          },
+        });
       }
       setStateCurrentRowIndex(nextRowIndex);
-    }, [gap, stateCurrentRowIndex, rowContentAnimation, maxRowIndex]);
+    }, [
+      gap,
+      stateCurrentRowIndex,
+      rowsAnimation,
+      rowContentAnimation,
+      maxRowIndex,
+    ]);
 
-    const decreaseCurrentRowIndex = useCallback(() => {
+    const decreaseCurrentRowIndex = useCallback(async () => {
       const prevRowIndex =
         stateCurrentRowIndex <= 0 ? maxRowIndex : stateCurrentRowIndex - 1;
 
       if (refSize.current.width) {
-        rowContentAnimation.start({
+        await rowsAnimation.start({
           x:
             -prevRowIndex * refSize.current.width +
             (prevRowIndex > 0 ? -prevRowIndex * gap : 0),
@@ -375,9 +397,23 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
             duration: defaultAnimationDuration,
           },
         });
+
+        await rowContentAnimation.start({
+          x: 0,
+          transition: {
+            ease: "linear",
+            duration: 0,
+          },
+        });
       }
       setStateCurrentRowIndex(prevRowIndex);
-    }, [gap, stateCurrentRowIndex, rowContentAnimation, maxRowIndex]);
+    }, [
+      gap,
+      stateCurrentRowIndex,
+      rowsAnimation,
+      rowContentAnimation,
+      maxRowIndex,
+    ]);
 
     const changeCurrentRowIndexTo = useCallback(
       ({
@@ -387,7 +423,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
         indexTo: number;
         animationDuration?: number;
       }) =>
-        () => {
+        async () => {
           if (
             indexTo === stateCurrentRowIndex ||
             indexTo < 0 ||
@@ -397,7 +433,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
           }
 
           if (refSize.current.width) {
-            rowContentAnimation.start({
+            await rowsAnimation.start({
               x:
                 -indexTo * refSize.current.width +
                 (indexTo > 0 ? -indexTo * gap : 0),
@@ -406,18 +442,32 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                 duration: animationDuration,
               },
             });
+
+            await rowContentAnimation.start({
+              x: 0,
+              transition: {
+                ease: "linear",
+                duration: 0,
+              },
+            });
           }
           setStateCurrentRowIndex(indexTo);
         },
-      [gap, stateCurrentRowIndex, rowContentAnimation, maxRowIndex],
+      [
+        gap,
+        stateCurrentRowIndex,
+        rowsAnimation,
+        rowContentAnimation,
+        maxRowIndex,
+      ],
     );
 
     // * Max row index edge case handling
     // When resize happens at small screen to big screen and the max index gets changed from 4 to 3 because the images per row gets changed.
     useEffect(() => {
       if (stateCurrentRowIndex > maxRowIndex) {
-        console.log("stateCurrentRowIndex:", stateCurrentRowIndex);
-        console.log("maxRowIndex:", maxRowIndex);
+        // console.log("stateCurrentRowIndex:", stateCurrentRowIndex);
+        // console.log("maxRowIndex:", maxRowIndex);
 
         changeCurrentRowIndexTo({
           indexTo: maxRowIndex,
@@ -429,7 +479,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     const windowResizeHandler = useCallback(() => {
       console.log(stateCurrentRowIndex);
       if (refSize.current.width) {
-        rowContentAnimation.start({
+        rowsAnimation.start({
           x:
             -stateCurrentRowIndex * refSize.current.width +
             (stateCurrentRowIndex > 0 ? -stateCurrentRowIndex * gap : 0),
@@ -438,7 +488,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
           },
         });
       }
-    }, [gap, stateCurrentRowIndex, rowContentAnimation]);
+    }, [gap, stateCurrentRowIndex, rowsAnimation]);
 
     useEffect(() => {
       window.addEventListener("resize", windowResizeHandler);
@@ -466,7 +516,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     const pathMatch = useMatch(pathMatchPattern);
     const location = useLocation();
     const list = new URLSearchParams(location.search).get("list");
-    console.log(list);
+    // console.log(list);
 
     const selectedItemIndex = useMemo(
       () =>
@@ -512,13 +562,58 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
       [],
     );
 
+    const [stateIsDragging, setStateIsDragging] = useState<boolean>(false);
+
+    const swipePower = useCallback(
+      ({ offset, velocity }: { offset: number; velocity: number }) => {
+        return Math.abs(offset) * velocity;
+      },
+      [],
+    );
+
+    // // https://codesandbox.io/p/sandbox/framer-motion-image-gallery-pqvx3?file=%2Fsrc%2FExample.tsx%3A71%2C21&from-embed
+    // const onDragEnd = useCallback<NonNullable<MotionProps["onDragEnd"]>>(
+    //   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    //   (event, { delta, offset, point, velocity }) => {
+    //     // Experimenting with distilling swipe offset and velocity into a single variable, so the less distance a user has swiped, the more velocity they need to register as a swipe.
+    //     // Should accommodate longer swipes and short flicks without having binary checks on just distance thresholds and velocity > 0.
+    //     const swipeConfidenceThreshold = 10000;
+    //     const swipe = swipePower({ offset: offset.x, velocity: velocity.x });
+
+    //     if (swipe > swipeConfidenceThreshold) {
+    //       // Swipe right (previous slide)
+    //       decreaseCurrentRowIndex();
+    //     } else if (swipe < -swipeConfidenceThreshold) {
+    //       // Swipe left (next slide)
+    //       increaseCurrentRowIndex();
+    //     }
+    //   },
+    //   [swipePower, decreaseCurrentRowIndex, increaseCurrentRowIndex],
+    // );
+
+    const defaultDragBuffer = 50;
+
+    const onDragEnd = useCallback<NonNullable<MotionProps["onDragEnd"]>>(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      (event, { delta, offset, point, velocity }) => {
+        if (offset.x > defaultDragBuffer) {
+          // Swipe right (previous slide)
+          decreaseCurrentRowIndex();
+        } else if (offset.x < -defaultDragBuffer) {
+          // Swipe left (next slide)
+          increaseCurrentRowIndex();
+        }
+      },
+      [decreaseCurrentRowIndex, increaseCurrentRowIndex],
+    );
+
     return (
       <>
         <CarouselBase ref={refBase} {...otherProps}>
           <CarouselRows
             variants={rowContentVariants}
             initial="initial"
-            animate={rowContentAnimation}
+            animate={rowsAnimation}
           >
             {Array.from({ length: maxRowIndex + 1 }, (_, rowIndex) => {
               return (
@@ -526,6 +621,17 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                   <CarouselRowContent
                     key={rowIndex}
                     itemCntPerRow={itemCntPerRow}
+                    drag="x"
+                    animate={rowContentAnimation}
+                    // dragConstraints={{ left: 0, right: 0 }}
+                    // dragElastic={1}
+                    // dragSnapToOrigin={true}
+                    // dragMomentum={false}
+                    // dragPropagation
+                    onTap={() => {
+                      setStateIsDragging(true);
+                    }}
+                    onDragEnd={onDragEnd}
                   >
                     {items
                       .slice(
@@ -537,6 +643,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
 
                         return (
                           <CarouselItemBox
+                            // onPointerDownCapture={(e) => e.stopPropagation()}
                             key={item.id}
                             ref={(el) => {
                               refCarouselItemBoxes.current[itemIndex] = el;
@@ -550,6 +657,9 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                               movieId: item.id.toString(),
                               title: item.title,
                             })}
+                            style={{
+                              pointerEvents: stateIsDragging ? "none" : "none",
+                            }}
                             onTapStart={onLayoutAnimationToModal({ index })}
                             // ㄴ onLayoutAnimationStart는 toModal 변하는 방향, fromModal 다시 되돌아오는 방향들 각각 시작할때 모두 발생해서 `onLayoutAnimationStart` 보다 `onTapStart`가 더 잘 맞는다.
                             onLayoutAnimationComplete={onLayoutAnimationFromModal(

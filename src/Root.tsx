@@ -88,6 +88,7 @@ const GlobalStyle = createGlobalStyle`
   }
   
   // Override for antd modal global css injection "html body { overflow-y: hidden; width: calc(100%- 17px); }"
+  // https://stackoverflow.com/a/28300471/11941803
   body:not(_):not(_):not(_) {
     overflow-y: unset;
     width: 100%;
