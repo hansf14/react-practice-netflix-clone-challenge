@@ -12,6 +12,8 @@ import {
   motion,
   MotionProps,
   useAnimation,
+  useDragControls,
+  useMotionValue,
   Variants,
 } from "motion/react";
 import { useMedia } from "react-use";
@@ -321,7 +323,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
 
     const isSmallerEqual600px = useMedia("(max-width: 600px)");
     const totalCntItem = items.length;
-    const defaultAnimationDuration = 1;
+    const defaultAnimationDuration = 5;
     const gap = !isSmallerEqual600px ? 10 : 0;
 
     const itemCntPerRow = isSmallerEqual600px ? 4 : 5;
@@ -355,6 +357,15 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
         stateCurrentRowIndex >= maxRowIndex ? 0 : stateCurrentRowIndex + 1;
 
       if (refSize.current.width) {
+        // Snap to origin (go back to default position) after the rowsAnimation ends (slide animation)
+        // rowContentAnimation.start({
+        //   x: 0,
+        //   transition: {
+        //     ease: "linear",
+        //     duration: 1,
+        //   },
+        // });
+
         await rowsAnimation.start({
           x:
             -nextRowIndex * refSize.current.width +
@@ -362,15 +373,6 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
           transition: {
             ease: "easeInOut",
             duration: defaultAnimationDuration,
-          },
-        });
-
-        // Snap to origin (go back to default position) after the rowsAnimation ends (slide animation)
-        await rowContentAnimation.start({
-          x: 0,
-          transition: {
-            ease: "linear",
-            duration: 0,
           },
         });
       }
@@ -398,13 +400,13 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
           },
         });
 
-        await rowContentAnimation.start({
-          x: 0,
-          transition: {
-            ease: "linear",
-            duration: 0,
-          },
-        });
+        // await rowContentAnimation.start({
+        //   x: 0,
+        //   transition: {
+        //     ease: "linear",
+        //     duration: 0,
+        //   },
+        // });
       }
       setStateCurrentRowIndex(prevRowIndex);
     }, [
@@ -443,13 +445,13 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
               },
             });
 
-            await rowContentAnimation.start({
-              x: 0,
-              transition: {
-                ease: "linear",
-                duration: 0,
-              },
-            });
+            // await rowContentAnimation.start({
+            //   x: 0,
+            //   transition: {
+            //     ease: "linear",
+            //     duration: 0,
+            //   },
+            // });
           }
           setStateCurrentRowIndex(indexTo);
         },
@@ -607,6 +609,15 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
       [decreaseCurrentRowIndex, increaseCurrentRowIndex],
     );
 
+    // Needed for drag handle
+    // CarouselRows: Actual being dragged item
+    // CarouselRowContent: drag handle
+    const dragControls = useDragControls(); // Initialize drag controls
+
+    const startDrag = (event) => {
+      dragControls.start(event); // Programmatically start dragging
+    };
+
     return (
       <>
         <CarouselBase ref={refBase} {...otherProps}>
@@ -614,6 +625,10 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
             variants={rowContentVariants}
             initial="initial"
             animate={rowsAnimation}
+            drag="x" // Allow dragging
+            dragControls={dragControls} // Bind drag controls
+            dragListener={false} // Disable default drag behavior (since we will attach the drag listeners to the drag handle(`CarouselRowContent`))
+            onDragEnd={onDragEnd}
           >
             {Array.from({ length: maxRowIndex + 1 }, (_, rowIndex) => {
               return (
@@ -621,17 +636,23 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                   <CarouselRowContent
                     key={rowIndex}
                     itemCntPerRow={itemCntPerRow}
-                    drag="x"
                     animate={rowContentAnimation}
+                    onPointerDown={startDrag}
+                    // * https://motion.dev/docs/react-use-drag-controls
+                    // Touch support
+                    // To support touch screens, the triggering element should have the touch-action: none style applied.
+                    // * userSelect
+                    // Make text selectable
+                    // To make draggable complete, need this property.
+                    style={{ touchAction: "none", userSelect: "none" }}
                     // dragConstraints={{ left: 0, right: 0 }}
                     // dragElastic={1}
                     // dragSnapToOrigin={true}
                     // dragMomentum={false}
                     // dragPropagation
-                    onTap={() => {
-                      setStateIsDragging(true);
-                    }}
-                    onDragEnd={onDragEnd}
+                    // onTap={() => {
+                    //   setStateIsDragging(true);
+                    // }}
                   >
                     {items
                       .slice(
