@@ -1,4 +1,4 @@
-import {
+import React, {
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -13,7 +13,6 @@ import {
   MotionProps,
   useAnimation,
   useDragControls,
-  useMotionValue,
   Variants,
 } from "motion/react";
 import { useMedia } from "react-use";
@@ -323,7 +322,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
 
     const isSmallerEqual600px = useMedia("(max-width: 600px)");
     const totalCntItem = items.length;
-    const defaultAnimationDuration = 5;
+    const defaultAnimationDuration = 1;
     const gap = !isSmallerEqual600px ? 10 : 0;
 
     const itemCntPerRow = isSmallerEqual600px ? 4 : 5;
@@ -331,7 +330,6 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     const [stateCurrentRowIndex, setStateCurrentRowIndex] = useState<number>(0);
 
     const rowsAnimation = useAnimation();
-    const rowContentAnimation = useAnimation();
 
     const refSize = useRef<Size>({ width: undefined, height: undefined });
     const onResize = useMemo(
@@ -352,20 +350,16 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
       onResize,
     });
 
+    // * Needed for drag handle
+    // `CarouselRows`: Actual being dragged item
+    // `CarouselRowContent`: drag handle
+    const dragControls = useDragControls(); // Initialize drag controls
+
     const increaseCurrentRowIndex = useCallback(async () => {
       const nextRowIndex =
         stateCurrentRowIndex >= maxRowIndex ? 0 : stateCurrentRowIndex + 1;
 
       if (refSize.current.width) {
-        // Snap to origin (go back to default position) after the rowsAnimation ends (slide animation)
-        // rowContentAnimation.start({
-        //   x: 0,
-        //   transition: {
-        //     ease: "linear",
-        //     duration: 1,
-        //   },
-        // });
-
         await rowsAnimation.start({
           x:
             -nextRowIndex * refSize.current.width +
@@ -377,13 +371,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
         });
       }
       setStateCurrentRowIndex(nextRowIndex);
-    }, [
-      gap,
-      stateCurrentRowIndex,
-      rowsAnimation,
-      rowContentAnimation,
-      maxRowIndex,
-    ]);
+    }, [gap, stateCurrentRowIndex, rowsAnimation, maxRowIndex]);
 
     const decreaseCurrentRowIndex = useCallback(async () => {
       const prevRowIndex =
@@ -399,23 +387,9 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
             duration: defaultAnimationDuration,
           },
         });
-
-        // await rowContentAnimation.start({
-        //   x: 0,
-        //   transition: {
-        //     ease: "linear",
-        //     duration: 0,
-        //   },
-        // });
       }
       setStateCurrentRowIndex(prevRowIndex);
-    }, [
-      gap,
-      stateCurrentRowIndex,
-      rowsAnimation,
-      rowContentAnimation,
-      maxRowIndex,
-    ]);
+    }, [gap, stateCurrentRowIndex, rowsAnimation, maxRowIndex]);
 
     const changeCurrentRowIndexTo = useCallback(
       ({
@@ -444,24 +418,10 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                 duration: animationDuration,
               },
             });
-
-            // await rowContentAnimation.start({
-            //   x: 0,
-            //   transition: {
-            //     ease: "linear",
-            //     duration: 0,
-            //   },
-            // });
           }
           setStateCurrentRowIndex(indexTo);
         },
-      [
-        gap,
-        stateCurrentRowIndex,
-        rowsAnimation,
-        rowContentAnimation,
-        maxRowIndex,
-      ],
+      [gap, stateCurrentRowIndex, rowsAnimation, maxRowIndex],
     );
 
     // * Max row index edge case handling
@@ -479,7 +439,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     }, [stateCurrentRowIndex, maxRowIndex, changeCurrentRowIndexTo]);
 
     const windowResizeHandler = useCallback(() => {
-      console.log(stateCurrentRowIndex);
+      // console.log(stateCurrentRowIndex);
       if (refSize.current.width) {
         rowsAnimation.start({
           x:
@@ -499,12 +459,66 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
       };
     }, [windowResizeHandler]);
 
+    //////////////////////////////////////////
+    // To support both drag & click
+    // `stateWasDrag` will be used at `onClickItem` which causes to open up the modal
+    // (it only does navigation but it will end up opening modal at the end.)
+
+    const [stateIsPointerDown, setStateIsPointerDown] =
+      useState<boolean>(false);
+    const [stateWasDrag, setStateWasDrag] = useState<boolean>(false);
+    const refPosStartX = useRef<number>(0);
+
+    const onPointerDown = useCallback<
+      React.PointerEventHandler<HTMLDivElement>
+    >(
+      (event) => {
+        // console.log("[onPointerDown]");
+        dragControls.start(event);
+
+        refPosStartX.current = event.clientX;
+        setStateIsPointerDown(true);
+        setStateWasDrag(false);
+      },
+      [dragControls],
+    );
+
+    const onPointerMove = useCallback<
+      React.PointerEventHandler<HTMLDivElement>
+    >(
+      (event) => {
+        if (
+          stateIsPointerDown &&
+          Math.abs(event.clientX - refPosStartX.current) >= defaultDragThreshold
+        ) {
+          setStateWasDrag(true);
+        }
+      },
+      [stateIsPointerDown],
+    );
+
+    const onPointerUp = useCallback<React.PointerEventHandler<HTMLDivElement>>(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      (event) => {
+        setStateIsPointerDown(false);
+      },
+      [],
+    );
+
+    //////////////////////////////////////////
+
     const onClickItem = useCallback(
       ({ id, movieId, title }: OnOpenItemParams) =>
         () => {
+          // console.log("[onClickItem]");
+
+          if (stateWasDrag) {
+            return;
+          }
+
           onOpenItem?.({ id, movieId, title });
         },
-      [onOpenItem],
+      [stateWasDrag, onOpenItem],
     );
 
     const onClickModalOverlay = useCallback(
@@ -548,24 +562,20 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
           if (!refCarouselItemBoxes.current?.[index]) {
             return;
           }
+          // console.log("[onLayoutAnimationToModal]");
+
           refCarouselItemBoxes.current[index].style.translate = "0 0 100px";
+          setTimeout(() => {
+            if (!refCarouselItemBoxes.current?.[index]) {
+              return;
+            }
+            refCarouselItemBoxes.current[index].style.translate = "";
+          }, 1000);
         },
       [],
     );
 
-    const onLayoutAnimationFromModal = useCallback(
-      ({ index }: { index: number }) =>
-        () => {
-          if (!refCarouselItemBoxes.current?.[index]) {
-            return;
-          }
-          refCarouselItemBoxes.current[index].style.translate = "";
-        },
-      [],
-    );
-
-    const [stateIsDragging, setStateIsDragging] = useState<boolean>(false);
-
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const swipePower = useCallback(
       ({ offset, velocity }: { offset: number; velocity: number }) => {
         return Math.abs(offset) * velocity;
@@ -593,30 +603,42 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     //   [swipePower, decreaseCurrentRowIndex, increaseCurrentRowIndex],
     // );
 
-    const defaultDragBuffer = 50;
+    const defaultDragThreshold = 50;
+    // Drag threshold / drag buffer
+    // Minimum movement to consider it a drag
 
     const onDragEnd = useCallback<NonNullable<MotionProps["onDragEnd"]>>(
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       (event, { delta, offset, point, velocity }) => {
-        if (offset.x > defaultDragBuffer) {
+        // console.log("[onDragEnd]");
+
+        if (offset.x > defaultDragThreshold) {
           // Swipe right (previous slide)
           decreaseCurrentRowIndex();
-        } else if (offset.x < -defaultDragBuffer) {
+        } else if (offset.x < -defaultDragThreshold) {
           // Swipe left (next slide)
           increaseCurrentRowIndex();
+        } else {
+          if (refSize.current.width) {
+            rowsAnimation.start({
+              x:
+                -stateCurrentRowIndex * refSize.current.width +
+                (stateCurrentRowIndex > 0 ? -stateCurrentRowIndex * gap : 0),
+              transition: {
+                duration: 0,
+              },
+            });
+          }
         }
       },
-      [decreaseCurrentRowIndex, increaseCurrentRowIndex],
+      [
+        gap,
+        rowsAnimation,
+        stateCurrentRowIndex,
+        decreaseCurrentRowIndex,
+        increaseCurrentRowIndex,
+      ],
     );
-
-    // Needed for drag handle
-    // CarouselRows: Actual being dragged item
-    // CarouselRowContent: drag handle
-    const dragControls = useDragControls(); // Initialize drag controls
-
-    const startDrag = (event) => {
-      dragControls.start(event); // Programmatically start dragging
-    };
 
     return (
       <>
@@ -628,6 +650,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
             drag="x" // Allow dragging
             dragControls={dragControls} // Bind drag controls
             dragListener={false} // Disable default drag behavior (since we will attach the drag listeners to the drag handle(`CarouselRowContent`))
+            onDragStart={() => console.log("[onDragStart]")}
             onDragEnd={onDragEnd}
           >
             {Array.from({ length: maxRowIndex + 1 }, (_, rowIndex) => {
@@ -636,8 +659,9 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                   <CarouselRowContent
                     key={rowIndex}
                     itemCntPerRow={itemCntPerRow}
-                    animate={rowContentAnimation}
-                    onPointerDown={startDrag}
+                    onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove}
+                    onPointerUp={onPointerUp}
                     // * https://motion.dev/docs/react-use-drag-controls
                     // Touch support
                     // To support touch screens, the triggering element should have the touch-action: none style applied.
@@ -645,14 +669,6 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                     // Make text selectable
                     // To make draggable complete, need this property.
                     style={{ touchAction: "none", userSelect: "none" }}
-                    // dragConstraints={{ left: 0, right: 0 }}
-                    // dragElastic={1}
-                    // dragSnapToOrigin={true}
-                    // dragMomentum={false}
-                    // dragPropagation
-                    // onTap={() => {
-                    //   setStateIsDragging(true);
-                    // }}
                   >
                     {items
                       .slice(
@@ -678,17 +694,19 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                               movieId: item.id.toString(),
                               title: item.title,
                             })}
-                            style={{
-                              pointerEvents: stateIsDragging ? "none" : "none",
-                            }}
-                            onTapStart={onLayoutAnimationToModal({ index })}
-                            // ㄴ onLayoutAnimationStart는 toModal 변하는 방향, fromModal 다시 되돌아오는 방향들 각각 시작할때 모두 발생해서 `onLayoutAnimationStart` 보다 `onTapStart`가 더 잘 맞는다.
-                            onLayoutAnimationComplete={onLayoutAnimationFromModal(
-                              { index },
-                            )}
+                            onTapStart={onLayoutAnimationToModal({
+                              index,
+                            })}
+                            // ㄴ onLayoutAnimationStart는 fromModal (다시 되돌아오는 방향)에서만 발생해서 `onLayoutAnimationStart` 보다 `onTapStart`가 더 잘 맞는다.
                           >
                             <CarouselItemPoster>
-                              {images[itemIndex]}
+                              {images[itemIndex] &&
+                                React.cloneElement(
+                                  images[itemIndex] as React.ReactElement,
+                                  {
+                                    style: { pointerEvents: "none" },
+                                  },
+                                )}
                             </CarouselItemPoster>
                             <CarouselItemTooltipOverflowParentGuard>
                               <CarouselItemTooltip
