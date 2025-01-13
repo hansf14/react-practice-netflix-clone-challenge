@@ -17,11 +17,11 @@ import {
 } from "motion/react";
 import { useMedia } from "react-use";
 import { css, styled } from "styled-components";
-import { withMemoAndRef } from "@/hocs/withMemoAndRef";
-import { StyledComponentProps } from "@/utils";
 import { CaretLeftFill, CaretRightFill } from "react-bootstrap-icons";
 import { useResizeObserver } from "usehooks-ts";
 import { throttle } from "lodash-es";
+import { withMemoAndRef } from "@/hocs/withMemoAndRef";
+import { StyledComponentProps } from "@/utils";
 
 const CarouselBase = styled.div`
   width: 100%;
@@ -176,7 +176,9 @@ export type CarouselControllerNumberProps = {
   isActive: boolean;
 };
 
-const CarouselControllerNumber = styled.div<CarouselControllerNumberProps>`
+const CarouselControllerNumber = styled.div.withConfig({
+  shouldForwardProp: (prop) => !["isActive"].includes(prop),
+})<CarouselControllerNumberProps>`
   font-size: 25px;
   ${({ isActive }) =>
     isActive
@@ -277,16 +279,24 @@ export type CarouselItem = {
 export type CarouselImage = React.ReactNode;
 
 export type OnOpenItemParams = {
-  id: string;
-  movieId: string;
+  carouselId: string;
+  itemId: string;
   title: string;
 };
 
 export interface OnCloseItemParams extends OnOpenItemParams {}
 
-export type OnOpenItem = ({ id, movieId, title }: OnOpenItemParams) => void;
+export type OnOpenItem = ({
+  carouselId,
+  itemId,
+  title,
+}: OnOpenItemParams) => void;
 
-export type OnCloseItem = ({ id, movieId, title }: OnCloseItemParams) => void;
+export type OnCloseItem = ({
+  carouselId,
+  itemId,
+  title,
+}: OnCloseItemParams) => void;
 
 export type CarouselProps = {
   id: string;
@@ -508,7 +518,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     //////////////////////////////////////////
 
     const onClickItem = useCallback(
-      ({ id, movieId, title }: OnOpenItemParams) =>
+      ({ carouselId, itemId, title }: OnOpenItemParams) =>
         () => {
           // console.log("[onClickItem]");
 
@@ -516,15 +526,15 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
             return;
           }
 
-          onOpenItem?.({ id, movieId, title });
+          onOpenItem?.({ carouselId, itemId, title });
         },
       [stateWasDrag, onOpenItem],
     );
 
     const onClickModalOverlay = useCallback(
-      ({ id, movieId, title }: OnCloseItemParams) =>
+      ({ carouselId, itemId, title }: OnCloseItemParams) =>
         () => {
-          onCloseItem?.({ id, movieId, title });
+          onCloseItem?.({ carouselId, itemId, title });
         },
       [onCloseItem],
     );
@@ -650,14 +660,13 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
             drag="x" // Allow dragging
             dragControls={dragControls} // Bind drag controls
             dragListener={false} // Disable default drag behavior (since we will attach the drag listeners to the drag handle(`CarouselRowContent`))
-            onDragStart={() => console.log("[onDragStart]")}
+            // onDragStart={() => console.log("[onDragStart]")}
             onDragEnd={onDragEnd}
           >
             {Array.from({ length: maxRowIndex + 1 }, (_, rowIndex) => {
               return (
-                <CarouselRow>
+                <CarouselRow key={rowIndex}>
                   <CarouselRowContent
-                    key={rowIndex}
                     itemCntPerRow={itemCntPerRow}
                     onPointerDown={onPointerDown}
                     onPointerMove={onPointerMove}
@@ -690,8 +699,8 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                             initial="initial"
                             whileHover="hover"
                             onClick={onClickItem({
-                              id,
-                              movieId: item.id.toString(),
+                              carouselId: id,
+                              itemId: item.id.toString(),
                               title: item.title,
                             })}
                             onTapStart={onLayoutAnimationToModal({
@@ -736,6 +745,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
               const isActive = index === stateCurrentRowIndex;
               return (
                 <CarouselControllerNumber
+                  key={index}
                   isActive={isActive}
                   onClick={changeCurrentRowIndexTo({ indexTo: index })}
                 >
@@ -753,8 +763,8 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
             <>
               <ModalOverlay
                 onClick={onClickModalOverlay({
-                  id,
-                  movieId: selectedItem.id.toString(),
+                  carouselId: id,
+                  itemId: selectedItem.id.toString(),
                   title: selectedItem.title,
                 })}
                 animate={{

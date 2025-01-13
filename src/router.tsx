@@ -1,7 +1,7 @@
 import Root from "@/Root";
-import Home from "@/sections/Home";
-import Search from "@/sections/Search";
-import Tv from "@/sections/Tv";
+import { Home } from "@/sections/Home";
+import { Search } from "@/sections/Search";
+import { TvShows } from "@/sections/TvShows";
 import { createBrowserRouter } from "react-router-dom";
 
 export const basePath = "/react-practice-netflix-clone-challenge";
@@ -16,8 +16,8 @@ export const router = createBrowserRouter([
         element: <Home />,
       },
       {
-        path: "tv",
-        element: <Tv />,
+        path: "tv-shows",
+        element: <TvShows />,
       },
       {
         path: "search",
@@ -25,7 +25,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "movies/:movieId",
-        element: <Home />
+        element: <Home />,
+      },
+      {
+        path: "tv-shows/:tvShowId",
+        element: <TvShows />,
       },
     ],
   },

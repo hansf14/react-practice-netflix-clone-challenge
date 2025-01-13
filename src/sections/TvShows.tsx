@@ -1,9 +1,9 @@
 import { useCallback } from "react";
 import {
-  getMoviesNowPlaying,
-  getMoviesPopular,
-  getMoviesTopRated,
-  getMoviesUpcoming,
+  getTvShowsAiringToday,
+  getTvShowsOnTheAir,
+  getTvShowsPopular,
+  getTvShowsTopRated,
 } from "@/api";
 import { basePath } from "@/router";
 import { useQuery } from "react-query";
@@ -29,49 +29,30 @@ import {
 
 const HomeBase = styled.div``;
 
-export function Home() {
+export function TvShows() {
   const {
-    data: dataNowPlaying,
-    isLoading: isLoadingNowPlaying,
-    isSuccess: isSuccessNowPlaying,
-    // isError: isErrorNowPlaying,
+    data: dataAiringToday,
+    isLoading: isLoadingAiringToday,
+    isSuccess: isSuccessAiringToday,
   } = useQuery({
-    queryKey: ["getMoviesNowPlaying"],
-    queryFn: getMoviesNowPlaying,
+    queryKey: ["getTvShowsAiringToday"],
+    queryFn: getTvShowsAiringToday,
   });
 
-  const {
-    data: dataPopular,
-    // isLoading: isLoadingPopular,
-    isSuccess: isSuccessPopular,
-    // isError: isErrorPopular,
-  } = useQuery({
-    queryKey: ["getMoviesPopular"],
-    queryFn: getMoviesPopular,
+  const { data: dataOnTheAir, isSuccess: isSuccessOnTheAir } = useQuery({
+    queryKey: ["getTvShowsOnTheAir"],
+    queryFn: getTvShowsOnTheAir,
   });
 
-  const {
-    data: dataTopRated,
-    // isLoading: isLoadingTopRated,
-    isSuccess: isSuccessTopRated,
-    // isError: isErrorTopRated,
-  } = useQuery({
-    queryKey: ["getMoviesTopRated"],
-    queryFn: getMoviesTopRated,
+  const { data: dataPopular, isSuccess: isSuccessPopular } = useQuery({
+    queryKey: ["getTvShowsPopular"],
+    queryFn: getTvShowsPopular,
   });
 
-  const {
-    data: dataUpcoming,
-    // isLoading: isLoadingUpcoming,
-    isSuccess: isSuccessUpcoming,
-    // isError: isErrorUpcoming,
-  } = useQuery({
-    queryKey: ["getMoviesUpcoming"],
-    queryFn: getMoviesUpcoming,
+  const { data: dataTopRated, isSuccess: isSuccessTopRated } = useQuery({
+    queryKey: ["getTvShowsTopRated"],
+    queryFn: getTvShowsTopRated,
   });
-
-  // console.log(dataNowPlaying);
-  // console.log(dataPopular);
 
   const isSmallerEqual600px = useMedia("(max-width: 600px)");
 
@@ -80,7 +61,7 @@ export function Home() {
   const onOpenMoviesItem = useCallback<OnOpenItem>(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ({ carouselId, itemId, title }) => {
-      navigate(`movies/${itemId}?list=${carouselId}`);
+      navigate(`${itemId}?list=${carouselId}`);
     },
     [navigate],
   );
@@ -91,38 +72,44 @@ export function Home() {
 
   const {
     bannerMovieImageSrc,
-    images: imagesNowPlaying,
-    items: itemsNowPlaying,
-  } = usePreprocessData<ItemMovie>({ data: dataNowPlaying });
+    images: imagesAiringToday,
+    items: itemsAiringToday,
+  } = usePreprocessData<ItemMovie>({
+    data: dataAiringToday,
+    dataType: "tv-show",
+  });
+
+  const { images: imagesOnTheAir, items: itemsOnTheAir } =
+    usePreprocessData<ItemMovie>({
+      data: dataOnTheAir,
+      dataType: "tv-show",
+    });
 
   const { images: imagesPopular, items: itemsPopular } =
     usePreprocessData<ItemMovie>({
       data: dataPopular,
+      dataType: "tv-show",
     });
 
   const { images: imagesTopRated, items: itemsTopRated } =
     usePreprocessData<ItemMovie>({
       data: dataTopRated,
-    });
-
-  const { images: imagesUpcoming, items: itemsUpcoming } =
-    usePreprocessData<ItemMovie>({
-      data: dataUpcoming,
+      dataType: "tv-show",
     });
 
   return (
     <HomeBase>
-      {isLoadingNowPlaying && <Loader />}
-      {isSuccessNowPlaying && dataNowPlaying.results.length && (
+      {isLoadingAiringToday && <Loader />}
+      {isSuccessAiringToday && dataAiringToday.results.length && (
         <>
           <Banner backgroundImageSrc={bannerMovieImageSrc}>
             <BannerContent>
-              <BannerTitle textLength={dataNowPlaying.results[0].title.length}>
-                {dataNowPlaying.results[0].title}
+              <BannerTitle textLength={dataAiringToday.results[0].name.length}>
+                {dataAiringToday.results[0].name}
               </BannerTitle>
               {!isSmallerEqual600px && (
                 <BannerOverview>
-                  {dataNowPlaying.results[0].overview}
+                  {dataAiringToday.results[0].overview}
                 </BannerOverview>
               )}
             </BannerContent>
@@ -130,25 +117,42 @@ export function Home() {
           {isSmallerEqual600px && (
             <BannerContentMobile>
               <BannerOverview>
-                {dataNowPlaying.results[0].overview}
+                {dataAiringToday.results[0].overview}
               </BannerOverview>
             </BannerContentMobile>
           )}
         </>
       )}
       <Carousels>
-        {isSuccessNowPlaying && dataNowPlaying.results.length && (
+        {isSuccessAiringToday && dataAiringToday.results.length && (
           <CarouselContainer>
-            <CarouselTitle>Now Playing</CarouselTitle>
+            <CarouselTitle>Airing Today</CarouselTitle>
             <CarouselDescription>
-              A list of movies that are currently in theatres.
+              A list of TV shows airing today.
             </CarouselDescription>
             <Carousel
               id="now-playing"
-              items={itemsNowPlaying}
-              images={imagesNowPlaying}
-              pathMatchPattern={`${basePath}/movies/:movieId`}
-              pathMatchParam="movieId"
+              items={itemsAiringToday}
+              images={imagesAiringToday}
+              pathMatchPattern={`${basePath}/tv-shows/:tvShowId`}
+              pathMatchParam="tvShowId"
+              onOpenItem={onOpenMoviesItem}
+              onCloseItem={onCloseMoviesItem}
+            />
+          </CarouselContainer>
+        )}
+        {isSuccessOnTheAir && dataOnTheAir.results.length && (
+          <CarouselContainer>
+            <CarouselTitle>On The Air</CarouselTitle>
+            <CarouselDescription>
+              A list of TV shows that air in the next 7 days.
+            </CarouselDescription>
+            <Carousel
+              id="popular"
+              items={itemsOnTheAir}
+              images={imagesOnTheAir}
+              pathMatchPattern={`${basePath}/tv-shows/:tvShowId`}
+              pathMatchParam="tvShowId"
               onOpenItem={onOpenMoviesItem}
               onCloseItem={onCloseMoviesItem}
             />
@@ -158,14 +162,14 @@ export function Home() {
           <CarouselContainer>
             <CarouselTitle>Popular</CarouselTitle>
             <CarouselDescription>
-              A list of movies ordered by popularity.
+              A list of TV shows ordered by popularity.
             </CarouselDescription>
             <Carousel
-              id="popular"
+              id="top-rated"
               items={itemsPopular}
               images={imagesPopular}
-              pathMatchPattern={`${basePath}/movies/:movieId`}
-              pathMatchParam="movieId"
+              pathMatchPattern={`${basePath}/tv-shows/:tvShowId`}
+              pathMatchParam="tvShowId"
               onOpenItem={onOpenMoviesItem}
               onCloseItem={onCloseMoviesItem}
             />
@@ -175,31 +179,14 @@ export function Home() {
           <CarouselContainer>
             <CarouselTitle>Top Rated</CarouselTitle>
             <CarouselDescription>
-              A list of movies ordered by rating.
-            </CarouselDescription>
-            <Carousel
-              id="top-rated"
-              items={itemsTopRated}
-              images={imagesTopRated}
-              pathMatchPattern={`${basePath}/movies/:movieId`}
-              pathMatchParam="movieId"
-              onOpenItem={onOpenMoviesItem}
-              onCloseItem={onCloseMoviesItem}
-            />
-          </CarouselContainer>
-        )}
-        {isSuccessUpcoming && dataUpcoming.results.length && (
-          <CarouselContainer>
-            <CarouselTitle>Upcoming</CarouselTitle>
-            <CarouselDescription>
-              A list of movies that are being released soon.
+              A list of TV shows ordered by rating.
             </CarouselDescription>
             <Carousel
               id="upcoming"
-              items={itemsUpcoming}
-              images={imagesUpcoming}
-              pathMatchPattern={`${basePath}/movies/:movieId`}
-              pathMatchParam="movieId"
+              items={itemsTopRated}
+              images={imagesTopRated}
+              pathMatchPattern={`${basePath}/tv-shows/:tvShowId`}
+              pathMatchParam="tvShowId"
               onOpenItem={onOpenMoviesItem}
               onCloseItem={onCloseMoviesItem}
             />

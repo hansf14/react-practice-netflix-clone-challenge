@@ -9,13 +9,13 @@ import {
 } from "motion/react";
 import { Link, useMatch } from "react-router-dom";
 import { SearchOutlined } from "@ant-design/icons";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { SearchProps } from "antd/es/input";
 import { Input, InputRef, Modal } from "antd";
 import { useClickAway, useMedia } from "react-use";
 import { basePath } from "@/router";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
 import { SmartOmit, StyledComponentProps } from "@/utils";
-import { SubmitHandler, useForm } from "react-hook-form";
-import { SearchProps } from "antd/es/input";
 
 const HeaderNavBarBase = styled(motion.nav)`
   z-index: 1000;
@@ -268,9 +268,9 @@ export const HeaderNavBar = withMemoAndRef<
 >({
   displayName: "HeaderNavBar",
   Component: (props, ref) => {
-    const tvPath = `${basePath}/tv`;
+    const tvShowsPath = `${basePath}/tv-shows`;
     const homeMatch = useMatch(basePath);
-    const tvMatch = useMatch(tvPath);
+    const tvShowsMatch = useMatch(tvShowsPath);
 
     const isSmallerEqual600px = useMedia("(max-width: 600px)");
 
@@ -465,9 +465,9 @@ export const HeaderNavBar = withMemoAndRef<
                 </Link>
               </HeaderNavBarItem>
               <HeaderNavBarItem>
-                <Link to={tvPath}>
+                <Link to={tvShowsPath}>
                   Tv Shows
-                  {tvMatch && (
+                  {tvShowsMatch && (
                     <HeaderNavBarItemCircle layoutId="HeaderNavBarItemCircle" />
                   )}
                 </Link>

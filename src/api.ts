@@ -1,10 +1,6 @@
 export const API_BASE_URL = "https://api.themoviedb.org/3";
 export const IMAGE_BASE_URL = "https://image.tmdb.org/t/p";
 
-// NEXFLIX_LOGO_URL
-export const IMAGE_FALLBACK_URL =
-  "https://assets.brand.microsites.netflix.io/assets/2800a67c-4252-11ec-a9ce-066b49664af6_cm_800w.jpg?v=4";
-
 // https://developer.themoviedb.org/reference/configuration-details
 // https://www.themoviedb.org/talk/53c11d4ec3a3684cf4006400
 // {
@@ -126,8 +122,8 @@ const fetchOptions = {
 
 export interface Movie {
   adult: boolean;
-  backdrop_path: string | undefined;
-  poster_path: string | undefined;
+  backdrop_path: string | null;
+  poster_path: string | null;
   genre_ids: number[];
   id: number;
   original_language: string;
@@ -139,17 +135,6 @@ export interface Movie {
   video: boolean;
   vote_average: number;
   vote_count: number;
-}
-
-export interface GetMoviesNowPlayingResult {
-  dates: {
-    maximum: string;
-    minimum: string;
-  };
-  page: number;
-  total_pages: number;
-  results: Movie[];
-  total_results: number;
 }
 
 // {
@@ -169,21 +154,7 @@ export interface GetMoviesNowPlayingResult {
 //   video: false;
 // };
 
-export interface GetMoviesPopularResult {
-  page: number;
-  total_pages: number;
-  results: Movie[];
-  total_results: number;
-}
-
-export interface GetMoviesTopRatedResult {
-  page: number;
-  total_pages: number;
-  results: Movie[];
-  total_results: number;
-}
-
-export interface GetMoviesUpcomingResult {
+export interface GetMoviesNowPlayingResult {
   dates: {
     maximum: string;
     minimum: string;
@@ -202,12 +173,45 @@ export async function getMoviesNowPlaying() {
   return response.json() as unknown as GetMoviesNowPlayingResult;
 }
 
+export interface GetMoviesPopularResult {
+  page: number;
+  total_pages: number;
+  results: Movie[];
+  total_results: number;
+}
+
 export async function getMoviesPopular() {
   const response = await fetch(
     `${API_BASE_URL}/movie/popular?language=en-US&page=1`,
     fetchOptions,
   );
   return response.json() as unknown as GetMoviesPopularResult;
+}
+
+export interface GetMoviesTopRatedResult {
+  page: number;
+  total_pages: number;
+  results: Movie[];
+  total_results: number;
+}
+
+export async function getMoviesTopRated() {
+  const response = await fetch(
+    `${API_BASE_URL}/movie/top_rated?language=en-US&page=1`,
+    fetchOptions,
+  );
+  return response.json() as unknown as GetMoviesTopRatedResult;
+}
+
+export interface GetMoviesUpcomingResult {
+  dates: {
+    maximum: string;
+    minimum: string;
+  };
+  page: number;
+  total_pages: number;
+  results: Movie[];
+  total_results: number;
 }
 
 export async function getMoviesUpcoming() {
@@ -218,10 +222,103 @@ export async function getMoviesUpcoming() {
   return response.json() as unknown as GetMoviesUpcomingResult;
 }
 
-export async function getMoviesTopRated() {
+//////////////////////////////////////////
+
+export interface TvShow {
+  adult: boolean;
+  backdrop_path?: string;
+  poster_path?: string;
+  genre_ids: number[];
+  id: number;
+  name: string;
+  original_language: string;
+  original_name: string;
+  origin_country: string[];
+  overview: string;
+  popularity: number;
+  first_air_date: string;
+  vote_average: number;
+  vote_count: number;
+}
+
+// {
+//   "adult": false,
+//   "backdrop_path": "/hmNgVtGWKYWQg6C6dAdRaASgt1M.jpg",
+//   "genre_ids": [
+//     10765,
+//     18
+//   ],
+//   "id": 243512,
+//   "origin_country": [
+//     "CN"
+//   ],
+//   "original_language": "zh",
+//   "original_name": "千朵桃花一世开",
+//   "overview": "In ancient times, the Human Emperor, Zhao Ming, petitioned on behalf of the people and sacrificed himself to resist the divine realm. After Zhao Ming's fall, his beloved, Hun Dunzhu, risked her life to save a wisp of his soul, setting up the cycle of reincarnation for eternity. In the distant future, Zhao Ming reincarnated as Xie Xuechen, the leader of the Immortal Alliance, while Hun Dunzhu became the Holy Maiden Mu Xuanling in the Dark Domain. The two finally reunited in the mortal realm but had forgotten their past, becoming adversaries in a \"righteous versus evil\" struggle. Mu Xuanling saved the heavily injured Xie Xuechen in the Dark Domain and coerced him to travel together in gratitude for saving his life.",
+//   "popularity": 1753.564,
+//   "poster_path": "/lAFxsacfM8r4XMh6ZeP48l1gCRS.jpg",
+//   "first_air_date": "2025-01-02",
+//   "name": "The Blossoming Love",
+//   "vote_average": 8.3,
+//   "vote_count": 3
+// },
+
+export interface GetTvShowsAiringTodayResult {
+  page: number;
+  total_pages: number;
+  results: TvShow[];
+  total_results: number;
+}
+
+export async function getTvShowsAiringToday() {
   const response = await fetch(
-    `${API_BASE_URL}/movie/top_rated?language=en-US&page=1`,
+    `${API_BASE_URL}/tv/airing_today?language=en-US&page=1`,
     fetchOptions,
   );
-  return response.json() as unknown as GetMoviesTopRatedResult;
+  return response.json() as unknown as GetTvShowsAiringTodayResult;
+}
+
+export interface GetTvShowsOnTheAirResult {
+  page: number;
+  total_pages: number;
+  results: TvShow[];
+  total_results: number;
+}
+
+export async function getTvShowsOnTheAir() {
+  const response = await fetch(
+    `${API_BASE_URL}/tv/on_the_air?language=en-US&page=1`,
+    fetchOptions,
+  );
+  return response.json() as unknown as GetTvShowsOnTheAirResult;
+}
+
+export interface GetTvShowsPopularResult {
+  page: number;
+  total_pages: number;
+  results: TvShow[];
+  total_results: number;
+}
+
+export async function getTvShowsPopular() {
+  const response = await fetch(
+    `${API_BASE_URL}/tv/popular?language=en-US&page=1`,
+    fetchOptions,
+  );
+  return response.json() as unknown as GetTvShowsPopularResult;
+}
+
+export interface GetTvShowsTopRatedResult {
+  page: number;
+  total_pages: number;
+  results: TvShow[];
+  total_results: number;
+}
+
+export async function getTvShowsTopRated() {
+  const response = await fetch(
+    `${API_BASE_URL}/tv/top_rated?language=en-US&page=1`,
+    fetchOptions,
+  );
+  return response.json() as unknown as GetTvShowsTopRatedResult;
 }

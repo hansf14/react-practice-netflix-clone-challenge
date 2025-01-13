@@ -1,5 +1,5 @@
-import { withMemoAndRef } from "@/hocs/withMemoAndRef";
 import { styled } from "styled-components";
+import { withMemoAndRef } from "@/hocs/withMemoAndRef";
 
 const FooterBase = styled.div`
   height: 100px;
