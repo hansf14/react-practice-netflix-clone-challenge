@@ -237,11 +237,22 @@ const ModalContainer = styled(motion.div)`
 `;
 
 const Modal = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, auto);
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: none;
+
+  &::after {
+    content: "";
+    display: table;
+    clear: both;
+  }
 `;
 
+const ModalContent = styled.div``;
+
 const SelectedItemPoster = styled.div`
+  float: left;
   aspect-ratio: 2 / 3;
   max-width: 40cqw;
 
@@ -259,10 +270,12 @@ const SelectedItemPoster = styled.div`
 `;
 
 const SelectedItemTitle = styled.h2`
+  overflow: hidden; // for BFC (block formatting context)(take remaining space)
+
   font-size: 28px;
   text-align: center;
 
-  margin: 10px 15px 10px 25px;
+  padding: 10px 15px 10px 25px;
 `;
 
 const rowContentVariants: Variants = {
@@ -873,16 +886,18 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
               />
               <ModalContainer layoutId={id + pathMatch.params[pathMatchParam]}>
                 <Modal>
-                  {selectedItem && (
-                    <>
-                      <SelectedItemPoster>
-                        {stateSelectedItemImage}
-                      </SelectedItemPoster>
-                      <SelectedItemTitle>
-                        {selectedItem.title}
-                      </SelectedItemTitle>
-                    </>
-                  )}
+                  <ModalContent>
+                    {selectedItem && (
+                      <>
+                        <SelectedItemPoster>
+                          {stateSelectedItemImage}
+                        </SelectedItemPoster>
+                        <SelectedItemTitle>
+                          {selectedItem.title}
+                        </SelectedItemTitle>
+                      </>
+                    )}
+                  </ModalContent>
                 </Modal>
               </ModalContainer>
             </>

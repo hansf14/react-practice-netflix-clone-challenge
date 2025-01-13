@@ -7,6 +7,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { HeaderNavBar } from "@/components/HeaderNavBar";
 import { Footer } from "@/components/Footer";
+import { getScrollbarCss } from "@/csses/scrollbar";
 // import { RecoilRoot } from "recoil";
 // import RecoilNexus from "recoil-nexus";
 // import reactLogo from "./assets/react.svg"; // /src/assets/...
@@ -66,6 +67,7 @@ const GlobalStyle = createGlobalStyle`
     border-spacing: 0;
   }
 
+  // Customized by me
   * {
     box-sizing: border-box;
   }
@@ -99,6 +101,30 @@ const GlobalStyle = createGlobalStyle`
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
+  }
+
+  html, body {
+    ${({
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      theme,
+    }) =>
+      getScrollbarCss({
+        // outline: "1px solid #fff",
+        margin: "1px",
+
+        thumbBackground: "#fff",
+        trackBackground: "#000",
+      })} 
+  }
+  * {
+    ${({
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      theme,
+    }) =>
+      getScrollbarCss({
+        thumbBackground: "#fff",
+        trackBackground: "transparent",
+      })}
   }
 `;
 
