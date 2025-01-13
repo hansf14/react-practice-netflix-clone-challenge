@@ -17,6 +17,7 @@ export const CarouselTitle = styled.h1`
       margin: 15px 0 15px 15px;
     }
   }
+
   @media (max-width: 400px) {
     & {
       font-size: 20px;
@@ -26,6 +27,12 @@ export const CarouselTitle = styled.h1`
 
 export const CarouselDescription = styled.p`
   margin: 0 10px 15px 10%;
+
+  @media (max-width: 1000px) {
+    & {
+      margin: 15px 0 15px 15px;
+    }
+  }
 
   font-size: 16px;
   font-weight: bold;

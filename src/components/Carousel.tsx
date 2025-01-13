@@ -7,6 +7,7 @@ import React, {
   useState,
 } from "react";
 import { useLocation, useMatch } from "react-router-dom";
+import parse from "html-react-parser";
 import {
   AnimatePresence,
   motion,
@@ -20,8 +21,12 @@ import { css, styled } from "styled-components";
 import { CaretLeftFill, CaretRightFill } from "react-bootstrap-icons";
 import { useResizeObserver } from "usehooks-ts";
 import { throttle } from "lodash-es";
+import { useQueries, UseQueryOptions } from "@tanstack/react-query";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
-import { StyledComponentProps } from "@/utils";
+import { preloadAllImages, preloadImage, StyledComponentProps } from "@/utils";
+import netflixInitialLogo from "@/assets/netflix-initial-logo.png";
+import { Error } from "@/components/Error";
+import { Loader } from "@/components/Loader";
 
 const CarouselBase = styled.div`
   width: 100%;
@@ -114,6 +119,14 @@ const CarouselItemPoster = styled.div`
   img {
     ${cssCarouselItemPosterImage}
   }
+
+  container-name: carousel-item-poster;
+  container-type: size;
+`;
+
+const CarouselItemPosterLoadIndicatorPlaceholder = styled.div`
+  width: 100cqw;
+  height: 100cqh;
 `;
 
 const CarouselItemTooltipOverflowParentGuard = styled.div`
@@ -189,21 +202,6 @@ const CarouselControllerNumber = styled.div.withConfig({
       : "cursor: pointer;"}
 `;
 
-const ModalContent = styled(motion.div)`
-  z-index: 10000;
-  position: fixed;
-  width: min(780px, 40%);
-  height: 80vh;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin: auto;
-
-  border-radius: 10px;
-  background-color: #111;
-`;
-
 const ModalOverlay = styled(motion.div)`
   z-index: 9999;
   position: fixed;
@@ -215,12 +213,44 @@ const ModalOverlay = styled(motion.div)`
   opacity: 0;
 `;
 
+const ModalContainer = styled(motion.div)`
+  z-index: 10000;
+  position: fixed;
+
+  width: clamp(280px, 80%, 1000px);
+  height: 80vh;
+
+  container-name: modal-container;
+  container-type: size;
+
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+
+  border-radius: 10px;
+  background-color: #010101;
+  border: 1px solid #fff;
+  box-shadow: 0 8px 32px 0 rgba(255, 255, 255, 0.37);
+  padding: 10px;
+`;
+
+const Modal = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+`;
+
 const SelectedItemPoster = styled.div`
-  width: 50%;
   aspect-ratio: 2 / 3;
-  margin: 10px;
+  max-width: 40cqw;
+
   display: flex;
   justify-content: center;
+
+  // border: 1px solid #fff;
+  // border-radius: 10px;
+  overflow: hidden;
 
   img {
     ${cssCarouselItemPosterImage}
@@ -229,8 +259,10 @@ const SelectedItemPoster = styled.div`
 `;
 
 const SelectedItemTitle = styled.h2`
-  font-size: 36px;
+  font-size: 28px;
   text-align: center;
+
+  margin: 10px 15px 10px 25px;
 `;
 
 const rowContentVariants: Variants = {
@@ -276,8 +308,6 @@ export type CarouselItem = {
   title: string;
 };
 
-export type CarouselImage = React.ReactNode;
-
 export type OnOpenItemParams = {
   carouselId: string;
   itemId: string;
@@ -301,9 +331,10 @@ export type OnCloseItem = ({
 export type CarouselProps = {
   id: string;
   items: CarouselItem[];
-  images: CarouselImage[];
+  images: string[];
   pathMatchPattern: string;
   pathMatchParam: string;
+  searchParam: string;
   onOpenItem?: OnOpenItem;
   onCloseItem?: OnCloseItem;
 } & StyledComponentProps<"div">;
@@ -317,12 +348,67 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
       images,
       pathMatchPattern,
       pathMatchParam,
+      searchParam: _searchParam,
       onOpenItem,
       onCloseItem,
       ...otherProps
     },
     ref,
   ) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const loadImages = useCallback(async () => {
+      const imageSrcArrForPreload = images;
+      const preloadedImageElements = await preloadAllImages({
+        srcArr: imageSrcArrForPreload,
+      });
+      // console.log(preloadedImageElements);
+
+      const preloadedImageComponents = preloadedImageElements.map((element) =>
+        element?.outerHTML ? (
+          parse(element?.outerHTML)
+        ) : (
+          <img src={netflixInitialLogo} /> // Fallback
+        ),
+      );
+      return preloadedImageComponents as React.JSX.Element[];
+    }, [images]);
+
+    const loadImage = useCallback(
+      async ({ index }: { index: number }) => {
+        const imageSrcForPreload = images[index];
+        const preloadedImageElement = await preloadImage({
+          src: imageSrcForPreload,
+        });
+        // console.log(preloadedImageElements);
+
+        const preloadedImageComponent = preloadedImageElement?.outerHTML ? (
+          parse(preloadedImageElement?.outerHTML)
+        ) : (
+          <img src={netflixInitialLogo} /> // Fallback
+        );
+        return preloadedImageComponent as React.JSX.Element;
+      },
+      [images],
+    );
+
+    const queryOptionsArr = useMemo(() => {
+      return images.map((src, index) => {
+        const queryOptions: UseQueryOptions<
+          React.JSX.Element,
+          unknown,
+          React.JSX.Element
+        > = {
+          queryKey: ["preloadImage", src],
+          queryFn: () => {
+            return loadImage({ index });
+          },
+          refetchOnWindowFocus: false,
+        };
+        return queryOptions;
+      });
+    }, [images, loadImage]);
+    const imageComponentObjs = useQueries({ queries: queryOptionsArr });
+
     const refBase = useRef<HTMLDivElement | null>(null);
     useImperativeHandle(ref, () => {
       return refBase.current as HTMLDivElement;
@@ -541,8 +627,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
 
     const pathMatch = useMatch(pathMatchPattern);
     const location = useLocation();
-    const list = new URLSearchParams(location.search).get("list");
-    // console.log(list);
+    const searchParam = new URLSearchParams(location.search).get(_searchParam);
 
     const selectedItemIndex = useMemo(
       () =>
@@ -560,11 +645,13 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     const [stateSelectedItemImage, setStateSelectedItemImage] =
       useState<React.ReactNode>(null);
 
+    const imageComponent = imageComponentObjs[selectedItemIndex]?.data;
     useEffect(() => {
       if (selectedItemIndex !== -1) {
-        setStateSelectedItemImage(images[selectedItemIndex]);
+        setStateSelectedItemImage(imageComponent ?? null);
       }
-    }, [selectedItemIndex, images]);
+    }, [selectedItemIndex, imageComponentObjs, imageComponent]);
+    // React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.
 
     const onLayoutAnimationToModal = useCallback(
       ({ index }: { index: number }) =>
@@ -689,7 +776,6 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
 
                         return (
                           <CarouselItemBox
-                            // onPointerDownCapture={(e) => e.stopPropagation()}
                             key={item.id}
                             ref={(el) => {
                               refCarouselItemBoxes.current[itemIndex] = el;
@@ -709,9 +795,20 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                             // ㄴ onLayoutAnimationStart는 fromModal (다시 되돌아오는 방향)에서만 발생해서 `onLayoutAnimationStart` 보다 `onTapStart`가 더 잘 맞는다.
                           >
                             <CarouselItemPoster>
-                              {images[itemIndex] &&
+                              {imageComponentObjs[itemIndex].status ===
+                                "error" && <Error />}
+                              {imageComponentObjs[itemIndex].status ===
+                                "pending" && (
+                                <Loader>
+                                  <CarouselItemPosterLoadIndicatorPlaceholder />
+                                </Loader>
+                              )}
+                              {imageComponentObjs[itemIndex].status ===
+                                "success" &&
+                                imageComponentObjs[itemIndex].data &&
                                 React.cloneElement(
-                                  images[itemIndex] as React.ReactElement,
+                                  imageComponentObjs[itemIndex]
+                                    .data as React.ReactElement,
                                   {
                                     style: { pointerEvents: "none" },
                                   },
@@ -759,7 +856,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
           </CarouselControllers>
         </CarouselBase>
         <AnimatePresence>
-          {pathMatch && selectedItem && list === id && (
+          {pathMatch && selectedItem && searchParam === id && (
             <>
               <ModalOverlay
                 onClick={onClickModalOverlay({
@@ -774,16 +871,20 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                   opacity: 0,
                 }}
               />
-              <ModalContent layoutId={id + pathMatch.params[pathMatchParam]}>
-                {selectedItem && (
-                  <>
-                    <SelectedItemPoster>
-                      {stateSelectedItemImage}
-                    </SelectedItemPoster>
-                    <SelectedItemTitle>{selectedItem.title}</SelectedItemTitle>
-                  </>
-                )}
-              </ModalContent>
+              <ModalContainer layoutId={id + pathMatch.params[pathMatchParam]}>
+                <Modal>
+                  {selectedItem && (
+                    <>
+                      <SelectedItemPoster>
+                        {stateSelectedItemImage}
+                      </SelectedItemPoster>
+                      <SelectedItemTitle>
+                        {selectedItem.title}
+                      </SelectedItemTitle>
+                    </>
+                  )}
+                </Modal>
+              </ModalContainer>
             </>
           )}
         </AnimatePresence>

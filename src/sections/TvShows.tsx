@@ -1,4 +1,10 @@
 import { useCallback } from "react";
+import { styled } from "styled-components";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { useMedia } from "react-use";
+import { Carousel, OnCloseItem, OnOpenItem } from "@/components/Carousel";
+import { ItemMovie, usePreprocessData } from "@/hooks/usePreprocessData";
 import {
   getTvShowsAiringToday,
   getTvShowsOnTheAir,
@@ -6,12 +12,6 @@ import {
   getTvShowsTopRated,
 } from "@/api";
 import { basePath } from "@/router";
-import { useQuery } from "react-query";
-import { styled } from "styled-components";
-import { useMedia } from "react-use";
-import { Carousel, OnCloseItem, OnOpenItem } from "@/components/Carousel";
-import { useNavigate } from "react-router-dom";
-import { ItemMovie, usePreprocessData } from "@/hooks/usePreprocessData";
 import {
   Banner,
   BannerContent,
@@ -57,11 +57,12 @@ export function TvShows() {
   const isSmallerEqual600px = useMedia("(max-width: 600px)");
 
   const navigate = useNavigate();
+  const searchParam = "list";
 
   const onOpenMoviesItem = useCallback<OnOpenItem>(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ({ carouselId, itemId, title }) => {
-      navigate(`${itemId}?list=${carouselId}`);
+      navigate(`${itemId}?${searchParam}=${carouselId}`);
     },
     [navigate],
   );
@@ -131,11 +132,12 @@ export function TvShows() {
               A list of TV shows airing today.
             </CarouselDescription>
             <Carousel
-              id="now-playing"
+              id="airing-today"
               items={itemsAiringToday}
               images={imagesAiringToday}
               pathMatchPattern={`${basePath}/tv-shows/:tvShowId`}
               pathMatchParam="tvShowId"
+              searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
               onCloseItem={onCloseMoviesItem}
             />
@@ -148,11 +150,12 @@ export function TvShows() {
               A list of TV shows that air in the next 7 days.
             </CarouselDescription>
             <Carousel
-              id="popular"
+              id="on-the-air"
               items={itemsOnTheAir}
               images={imagesOnTheAir}
               pathMatchPattern={`${basePath}/tv-shows/:tvShowId`}
               pathMatchParam="tvShowId"
+              searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
               onCloseItem={onCloseMoviesItem}
             />
@@ -165,11 +168,12 @@ export function TvShows() {
               A list of TV shows ordered by popularity.
             </CarouselDescription>
             <Carousel
-              id="top-rated"
+              id="popular"
               items={itemsPopular}
               images={imagesPopular}
               pathMatchPattern={`${basePath}/tv-shows/:tvShowId`}
               pathMatchParam="tvShowId"
+              searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
               onCloseItem={onCloseMoviesItem}
             />
@@ -182,11 +186,12 @@ export function TvShows() {
               A list of TV shows ordered by rating.
             </CarouselDescription>
             <Carousel
-              id="upcoming"
+              id="top-rated"
               items={itemsTopRated}
               images={imagesTopRated}
               pathMatchPattern={`${basePath}/tv-shows/:tvShowId`}
               pathMatchParam="tvShowId"
+              searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
               onCloseItem={onCloseMoviesItem}
             />

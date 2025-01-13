@@ -1,4 +1,10 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
+import { styled } from "styled-components";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { useMedia } from "react-use";
+import { Carousel, OnCloseItem, OnOpenItem } from "@/components/Carousel";
+import { ItemMovie, usePreprocessData } from "@/hooks/usePreprocessData";
 import {
   getMoviesNowPlaying,
   getMoviesPopular,
@@ -6,12 +12,6 @@ import {
   getMoviesUpcoming,
 } from "@/api";
 import { basePath } from "@/router";
-import { useQuery } from "react-query";
-import { styled } from "styled-components";
-import { useMedia } from "react-use";
-import { Carousel, OnCloseItem, OnOpenItem } from "@/components/Carousel";
-import { useNavigate } from "react-router-dom";
-import { ItemMovie, usePreprocessData } from "@/hooks/usePreprocessData";
 import {
   Banner,
   BannerContent,
@@ -26,6 +26,7 @@ import {
   Carousels,
   CarouselTitle,
 } from "@/components/Carousels";
+import { Error } from "@/components/Error";
 
 const HomeBase = styled.div``;
 
@@ -34,7 +35,7 @@ export function Home() {
     data: dataNowPlaying,
     isLoading: isLoadingNowPlaying,
     isSuccess: isSuccessNowPlaying,
-    // isError: isErrorNowPlaying,
+    isError: isErrorNowPlaying,
   } = useQuery({
     queryKey: ["getMoviesNowPlaying"],
     queryFn: getMoviesNowPlaying,
@@ -76,6 +77,7 @@ export function Home() {
   const isSmallerEqual600px = useMedia("(max-width: 600px)");
 
   const navigate = useNavigate();
+  const searchParam = "list";
 
   const onOpenMoviesItem = useCallback<OnOpenItem>(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -110,32 +112,38 @@ export function Home() {
       data: dataUpcoming,
     });
 
-  return (
-    <HomeBase>
-      {isLoadingNowPlaying && <Loader />}
-      {isSuccessNowPlaying && dataNowPlaying.results.length && (
-        <>
-          <Banner backgroundImageSrc={bannerMovieImageSrc}>
-            <BannerContent>
-              <BannerTitle textLength={dataNowPlaying.results[0].title.length}>
-                {dataNowPlaying.results[0].title}
-              </BannerTitle>
-              {!isSmallerEqual600px && (
-                <BannerOverview>
-                  {dataNowPlaying.results[0].overview}
-                </BannerOverview>
-              )}
-            </BannerContent>
-          </Banner>
-          {isSmallerEqual600px && (
-            <BannerContentMobile>
+  const banner = useMemo(() => {
+    return !!dataNowPlaying?.results.length ? (
+      <>
+        <Banner backgroundImageSrc={bannerMovieImageSrc}>
+          <BannerContent>
+            <BannerTitle textLength={dataNowPlaying.results[0].title.length}>
+              {dataNowPlaying.results[0].title}
+            </BannerTitle>
+            {!isSmallerEqual600px && (
               <BannerOverview>
                 {dataNowPlaying.results[0].overview}
               </BannerOverview>
-            </BannerContentMobile>
-          )}
-        </>
-      )}
+            )}
+          </BannerContent>
+        </Banner>
+        {isSmallerEqual600px && (
+          <BannerContentMobile>
+            <BannerOverview>
+              {dataNowPlaying.results[0].overview}
+            </BannerOverview>
+          </BannerContentMobile>
+        )}
+      </>
+    ) : (
+      <Banner />
+    );
+  }, [bannerMovieImageSrc, dataNowPlaying?.results, isSmallerEqual600px]);
+
+  return (
+    <HomeBase>
+      {isErrorNowPlaying && <Error />}
+      {isLoadingNowPlaying ? <Loader>{banner}</Loader> : banner}
       <Carousels>
         {isSuccessNowPlaying && dataNowPlaying.results.length && (
           <CarouselContainer>
@@ -149,6 +157,7 @@ export function Home() {
               images={imagesNowPlaying}
               pathMatchPattern={`${basePath}/movies/:movieId`}
               pathMatchParam="movieId"
+              searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
               onCloseItem={onCloseMoviesItem}
             />
@@ -166,6 +175,7 @@ export function Home() {
               images={imagesPopular}
               pathMatchPattern={`${basePath}/movies/:movieId`}
               pathMatchParam="movieId"
+              searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
               onCloseItem={onCloseMoviesItem}
             />
@@ -183,6 +193,7 @@ export function Home() {
               images={imagesTopRated}
               pathMatchPattern={`${basePath}/movies/:movieId`}
               pathMatchParam="movieId"
+              searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
               onCloseItem={onCloseMoviesItem}
             />
@@ -200,6 +211,7 @@ export function Home() {
               images={imagesUpcoming}
               pathMatchPattern={`${basePath}/movies/:movieId`}
               pathMatchParam="movieId"
+              searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
               onCloseItem={onCloseMoviesItem}
             />

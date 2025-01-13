@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import parse from "html-react-parser";
+import { useMemo } from "react";
 import {
   getImageUrl,
   GetMoviesNowPlayingResult,
@@ -10,7 +9,7 @@ import {
   Movie,
   TvShow,
 } from "@/api";
-import { preloadAllImages, SmartMerge, SmartOmit } from "@/utils";
+import { SmartMerge, SmartOmit } from "@/utils";
 import netflixInitialLogo from "@/assets/netflix-initial-logo.png";
 
 export type ItemMovie = SmartMerge<SmartOmit<Movie, "id"> & { id: string }>;
@@ -42,7 +41,7 @@ export const usePreprocessData = <Item extends ItemMovie | ItemTvShow>({
       })
     : netflixInitialLogo;
 
-  const posterImageSrcArr = useMemo(() => {
+  const images = useMemo(() => {
     return (
       data?.results.map((movie) => {
         return !!movie.poster_path
@@ -54,29 +53,6 @@ export const usePreprocessData = <Item extends ItemMovie | ItemTvShow>({
       }) ?? []
     );
   }, [data?.results]);
-
-  const [statePreloadedImages, setStatePreloadedImages] = useState<
-    React.ReactNode[]
-  >([]);
-
-  useEffect(() => {
-    (async () => {
-      const imageSrcArrForPreload = posterImageSrcArr;
-      const preloadedImageElements = await preloadAllImages({
-        srcArr: imageSrcArrForPreload,
-      });
-      console.log(preloadedImageElements);
-
-      const preloadedImageComponents = preloadedImageElements.map((element) =>
-        element?.outerHTML ? (
-          parse(element?.outerHTML)
-        ) : (
-          <img src={netflixInitialLogo} /> // Fallback
-        ),
-      );
-      setStatePreloadedImages(preloadedImageComponents);
-    })();
-  }, [posterImageSrcArr]);
 
   const items = useMemo(() => {
     if (!data) {
@@ -105,7 +81,7 @@ export const usePreprocessData = <Item extends ItemMovie | ItemTvShow>({
 
   return {
     bannerMovieImageSrc,
-    images: statePreloadedImages,
+    images,
     items: items as unknown as Item[],
   };
 };
