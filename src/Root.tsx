@@ -130,7 +130,7 @@ const GlobalStyle = createGlobalStyle`
 
 const Layout = styled.main`
   flex-grow: 1;
-  overflow-x: hidden;
+  overflow: hidden;
   width: 100%;
 
   padding-top: ${({ theme }) => `${theme.headerNavBarHeight}px`};

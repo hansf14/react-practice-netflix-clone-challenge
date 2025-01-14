@@ -3,7 +3,7 @@ import { styled } from "styled-components";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useMedia } from "react-use";
-import { Carousel, OnCloseItem, OnOpenItem } from "@/components/Carousel";
+import { Carousel, OnOpenItem } from "@/components/Carousel";
 import { ItemMovie, usePreprocessData } from "@/hooks/usePreprocessData";
 import {
   getMoviesNowPlaying,
@@ -27,6 +27,7 @@ import {
   CarouselTitle,
 } from "@/components/Carousels";
 import { Error } from "@/components/Error";
+import { ModalDetailView, OnCloseItem } from "@/components/ModalDetailView";
 
 const HomeBase = styled.div``;
 
@@ -77,19 +78,32 @@ export function Home() {
   const isSmallerEqual600px = useMedia("(max-width: 600px)");
 
   const navigate = useNavigate();
+
+  const pathMatchPattern = `${basePath}/movies/:movieId`;
+  const pathMatchParam = "movieId";
   const searchParam = "list";
 
   const onOpenMoviesItem = useCallback<OnOpenItem>(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ({ carouselId, itemId, title }) => {
-      navigate(`movies/${itemId}?list=${carouselId}`);
+    ({ carouselId, itemId, title, image }) => {
+      console.log(image);
+
+      navigate(`movies/${itemId}?${searchParam}=${carouselId}`, {
+        state: {
+          image,
+        },
+      });
     },
     [navigate],
   );
 
-  const onCloseMoviesItem = useCallback<OnCloseItem>(() => {
-    navigate(-1);
-  }, [navigate]);
+  const onClickModalOverlay = useCallback<OnCloseItem>(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ({ itemId, title }) => {
+      navigate(-1);
+    },
+    [navigate],
+  );
 
   const {
     bannerMovieImageSrc,
@@ -155,11 +169,7 @@ export function Home() {
               id="now-playing"
               items={itemsNowPlaying}
               images={imagesNowPlaying}
-              pathMatchPattern={`${basePath}/movies/:movieId`}
-              pathMatchParam="movieId"
-              searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
-              onCloseItem={onCloseMoviesItem}
             />
           </CarouselContainer>
         )}
@@ -173,11 +183,7 @@ export function Home() {
               id="popular"
               items={itemsPopular}
               images={imagesPopular}
-              pathMatchPattern={`${basePath}/movies/:movieId`}
-              pathMatchParam="movieId"
-              searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
-              onCloseItem={onCloseMoviesItem}
             />
           </CarouselContainer>
         )}
@@ -191,11 +197,7 @@ export function Home() {
               id="top-rated"
               items={itemsTopRated}
               images={imagesTopRated}
-              pathMatchPattern={`${basePath}/movies/:movieId`}
-              pathMatchParam="movieId"
-              searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
-              onCloseItem={onCloseMoviesItem}
             />
           </CarouselContainer>
         )}
@@ -209,15 +211,17 @@ export function Home() {
               id="upcoming"
               items={itemsUpcoming}
               images={imagesUpcoming}
-              pathMatchPattern={`${basePath}/movies/:movieId`}
-              pathMatchParam="movieId"
-              searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
-              onCloseItem={onCloseMoviesItem}
             />
           </CarouselContainer>
         )}
       </Carousels>
+      <ModalDetailView
+        pathMatchPattern={pathMatchPattern}
+        pathMatchParam={pathMatchParam}
+        searchParam={searchParam}
+        onClickModalOverlay={onClickModalOverlay}
+      />
     </HomeBase>
   );
 }

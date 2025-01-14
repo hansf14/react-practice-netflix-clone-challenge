@@ -165,6 +165,7 @@ export interface GetMoviesNowPlayingResult {
   total_results: number;
 }
 
+// https://developer.themoviedb.org/reference/movie-now-playing-list
 export async function getMoviesNowPlaying() {
   const response = await fetch(
     `${API_BASE_URL}/movie/now_playing?language=en-US&page=1`,
@@ -180,6 +181,7 @@ export interface GetMoviesPopularResult {
   total_results: number;
 }
 
+// https://developer.themoviedb.org/reference/movie-popular-list
 export async function getMoviesPopular() {
   const response = await fetch(
     `${API_BASE_URL}/movie/popular?language=en-US&page=1`,
@@ -195,6 +197,7 @@ export interface GetMoviesTopRatedResult {
   total_results: number;
 }
 
+// https://developer.themoviedb.org/reference/movie-top-rated-list
 export async function getMoviesTopRated() {
   const response = await fetch(
     `${API_BASE_URL}/movie/top_rated?language=en-US&page=1`,
@@ -214,12 +217,76 @@ export interface GetMoviesUpcomingResult {
   total_results: number;
 }
 
+// https://developer.themoviedb.org/reference/movie-upcoming-list
 export async function getMoviesUpcoming() {
   const response = await fetch(
     `${API_BASE_URL}/movie/upcoming?language=en-US&page=1`,
     fetchOptions,
   );
   return response.json() as unknown as GetMoviesUpcomingResult;
+}
+
+export interface MovieDetails {
+  adult: boolean;
+  backdrop_path: string | null;
+  belongs_to_collection: string | null;
+  budget: number;
+  genres: Genre[];
+  homepage: string;
+  id: number;
+  imdb_id: string;
+  origin_country: string[];
+  original_language: string;
+  original_title: string;
+  overview: string;
+  popularity: number;
+  poster_path: string | null;
+  production_companies: ProductionCompany[];
+  production_countries: ProductionCountry[];
+  release_date: string;
+  revenue: number;
+  runtime: number;
+  spoken_languages: SpokenLanguage[];
+  status: string;
+  tagline: string;
+  title: string;
+  video: boolean;
+  vote_average: number;
+  vote_count: number;
+}
+
+export interface Genre {
+  id: number;
+  name: string;
+}
+
+export interface ProductionCompany {
+  id: number;
+  logo_path?: string;
+  name: string;
+  origin_country: string;
+}
+
+export interface ProductionCountry {
+  iso_3166_1: string;
+  name: string;
+}
+
+export interface SpokenLanguage {
+  english_name: string;
+  iso_639_1: string;
+  name: string;
+}
+
+export type GetMovieDetailsParams = { movieId: string };
+
+// https://developer.themoviedb.org/reference/movie-details
+export async function getMovieDetails({ movieId }: GetMovieDetailsParams) {
+  const response = await fetch(
+    `${API_BASE_URL}/movie/${movieId}?language=en-US`,
+    fetchOptions,
+  );
+  return response.json() as unknown as MovieDetails;
 }
 
 //////////////////////////////////////////
@@ -270,6 +337,7 @@ export interface GetTvShowsAiringTodayResult {
   total_results: number;
 }
 
+// https://developer.themoviedb.org/reference/tv-series-airing-today-list
 export async function getTvShowsAiringToday() {
   const response = await fetch(
     `${API_BASE_URL}/tv/airing_today?language=en-US&page=1`,
@@ -285,6 +353,7 @@ export interface GetTvShowsOnTheAirResult {
   total_results: number;
 }
 
+// https://developer.themoviedb.org/reference/tv-series-on-the-air-list
 export async function getTvShowsOnTheAir() {
   const response = await fetch(
     `${API_BASE_URL}/tv/on_the_air?language=en-US&page=1`,
@@ -300,6 +369,7 @@ export interface GetTvShowsPopularResult {
   total_results: number;
 }
 
+// https://developer.themoviedb.org/reference/tv-series-popular-list
 export async function getTvShowsPopular() {
   const response = await fetch(
     `${API_BASE_URL}/tv/popular?language=en-US&page=1`,
@@ -315,6 +385,7 @@ export interface GetTvShowsTopRatedResult {
   total_results: number;
 }
 
+// https://developer.themoviedb.org/reference/tv-series-top-rated-list
 export async function getTvShowsTopRated() {
   const response = await fetch(
     `${API_BASE_URL}/tv/top_rated?language=en-US&page=1`,

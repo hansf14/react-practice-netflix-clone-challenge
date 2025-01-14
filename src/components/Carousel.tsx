@@ -6,10 +6,8 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useLocation, useMatch } from "react-router-dom";
 import parse from "html-react-parser";
 import {
-  AnimatePresence,
   motion,
   MotionProps,
   useAnimation,
@@ -100,7 +98,7 @@ const CarouselItemBox = styled(motion.div)`
   cursor: pointer;
 `;
 
-const cssCarouselItemPosterImage = css`
+export const cssCarouselItemPosterImage = css`
   display: block;
   max-width: 100%;
   max-height: 100%;
@@ -202,82 +200,6 @@ const CarouselControllerNumber = styled.div.withConfig({
       : "cursor: pointer;"}
 `;
 
-const ModalOverlay = styled(motion.div)`
-  z-index: 9999;
-  position: fixed;
-  top: 0;
-  width: 100%;
-  height: 100%;
-
-  background-color: rgba(0, 0, 0, 0.5);
-  opacity: 0;
-`;
-
-const ModalContainer = styled(motion.div)`
-  z-index: 10000;
-  position: fixed;
-
-  width: clamp(280px, 80%, 1000px);
-  height: 80vh;
-
-  container-name: modal-container;
-  container-type: size;
-
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin: auto;
-
-  border-radius: 10px;
-  background-color: #010101;
-  border: 1px solid #fff;
-  box-shadow: 0 8px 32px 0 rgba(255, 255, 255, 0.37);
-  padding: 10px;
-`;
-
-const Modal = styled.div`
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  overscroll-behavior: none;
-
-  &::after {
-    content: "";
-    display: table;
-    clear: both;
-  }
-`;
-
-const ModalContent = styled.div``;
-
-const SelectedItemPoster = styled.div`
-  float: left;
-  aspect-ratio: 2 / 3;
-  max-width: 40cqw;
-
-  display: flex;
-  justify-content: center;
-
-  // border: 1px solid #fff;
-  // border-radius: 10px;
-  overflow: hidden;
-
-  img {
-    ${cssCarouselItemPosterImage}
-    object-fit: contain;
-  }
-`;
-
-const SelectedItemTitle = styled.h2`
-  overflow: hidden; // for BFC (block formatting context)(take remaining space)
-
-  font-size: 28px;
-  text-align: center;
-
-  padding: 10px 15px 10px 25px;
-`;
-
 const rowContentVariants: Variants = {
   initial: { x: 0 },
 };
@@ -325,9 +247,8 @@ export type OnOpenItemParams = {
   carouselId: string;
   itemId: string;
   title: string;
+  image: string;
 };
-
-export interface OnCloseItemParams extends OnOpenItemParams {}
 
 export type OnOpenItem = ({
   carouselId,
@@ -335,39 +256,16 @@ export type OnOpenItem = ({
   title,
 }: OnOpenItemParams) => void;
 
-export type OnCloseItem = ({
-  carouselId,
-  itemId,
-  title,
-}: OnCloseItemParams) => void;
-
 export type CarouselProps = {
   id: string;
   items: CarouselItem[];
   images: string[];
-  pathMatchPattern: string;
-  pathMatchParam: string;
-  searchParam: string;
   onOpenItem?: OnOpenItem;
-  onCloseItem?: OnCloseItem;
 } & StyledComponentProps<"div">;
 
 export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
   displayName: "Carousel",
-  Component: (
-    {
-      id,
-      items,
-      images,
-      pathMatchPattern,
-      pathMatchParam,
-      searchParam: _searchParam,
-      onOpenItem,
-      onCloseItem,
-      ...otherProps
-    },
-    ref,
-  ) => {
+  Component: ({ id, items, images, onOpenItem, ...otherProps }, ref) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const loadImages = useCallback(async () => {
       const imageSrcArrForPreload = images;
@@ -392,7 +290,6 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
         const preloadedImageElement = await preloadImage({
           src: imageSrcForPreload,
         });
-        // console.log(preloadedImageElements);
 
         const preloadedImageComponent = preloadedImageElement?.outerHTML ? (
           parse(preloadedImageElement?.outerHTML)
@@ -617,7 +514,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     //////////////////////////////////////////
 
     const onClickItem = useCallback(
-      ({ carouselId, itemId, title }: OnOpenItemParams) =>
+      ({ carouselId, itemId, title, image }: OnOpenItemParams) =>
         () => {
           // console.log("[onClickItem]");
 
@@ -625,46 +522,10 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
             return;
           }
 
-          onOpenItem?.({ carouselId, itemId, title });
+          onOpenItem?.({ carouselId, itemId, title, image });
         },
       [stateWasDrag, onOpenItem],
     );
-
-    const onClickModalOverlay = useCallback(
-      ({ carouselId, itemId, title }: OnCloseItemParams) =>
-        () => {
-          onCloseItem?.({ carouselId, itemId, title });
-        },
-      [onCloseItem],
-    );
-
-    const pathMatch = useMatch(pathMatchPattern);
-    const location = useLocation();
-    const searchParam = new URLSearchParams(location.search).get(_searchParam);
-
-    const selectedItemIndex = useMemo(
-      () =>
-        pathMatch && pathMatch.params[pathMatchParam]
-          ? (items.findIndex(
-              (item) => item.id.toString() === pathMatch.params[pathMatchParam],
-            ) ?? -1)
-          : -1,
-      [items, pathMatch, pathMatchParam],
-    );
-
-    const selectedItem =
-      selectedItemIndex === -1 ? null : items[selectedItemIndex];
-
-    const [stateSelectedItemImage, setStateSelectedItemImage] =
-      useState<React.ReactNode>(null);
-
-    const imageComponent = imageComponentObjs[selectedItemIndex]?.data;
-    useEffect(() => {
-      if (selectedItemIndex !== -1) {
-        setStateSelectedItemImage(imageComponent ?? null);
-      }
-    }, [selectedItemIndex, imageComponentObjs, imageComponent]);
-    // React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.
 
     const onLayoutAnimationToModal = useCallback(
       ({ index }: { index: number }) =>
@@ -801,6 +662,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                               carouselId: id,
                               itemId: item.id.toString(),
                               title: item.title,
+                              image: images[itemIndex],
                             })}
                             onTapStart={onLayoutAnimationToModal({
                               index,
@@ -868,41 +730,6 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
             </CarouselControllerNext>
           </CarouselControllers>
         </CarouselBase>
-        <AnimatePresence>
-          {pathMatch && selectedItem && searchParam === id && (
-            <>
-              <ModalOverlay
-                onClick={onClickModalOverlay({
-                  carouselId: id,
-                  itemId: selectedItem.id.toString(),
-                  title: selectedItem.title,
-                })}
-                animate={{
-                  opacity: 1,
-                }}
-                exit={{
-                  opacity: 0,
-                }}
-              />
-              <ModalContainer layoutId={id + pathMatch.params[pathMatchParam]}>
-                <Modal>
-                  <ModalContent>
-                    {selectedItem && (
-                      <>
-                        <SelectedItemPoster>
-                          {stateSelectedItemImage}
-                        </SelectedItemPoster>
-                        <SelectedItemTitle>
-                          {selectedItem.title}
-                        </SelectedItemTitle>
-                      </>
-                    )}
-                  </ModalContent>
-                </Modal>
-              </ModalContainer>
-            </>
-          )}
-        </AnimatePresence>
       </>
     );
   },
