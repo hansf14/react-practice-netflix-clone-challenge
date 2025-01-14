@@ -83,10 +83,10 @@ export function Home() {
   const pathMatchParam = "movieId";
   const searchParam = "list";
 
-  const onOpenMoviesItem = useCallback<OnOpenItem>(
+  const onOpenMovie = useCallback<OnOpenItem>(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ({ carouselId, itemId, title, image }) => {
-      console.log(image);
+      // console.log(image);
 
       navigate(`movies/${itemId}?${searchParam}=${carouselId}`, {
         state: {
@@ -169,7 +169,7 @@ export function Home() {
               id="now-playing"
               items={itemsNowPlaying}
               images={imagesNowPlaying}
-              onOpenItem={onOpenMoviesItem}
+              onOpenItem={onOpenMovie}
             />
           </CarouselContainer>
         )}
@@ -183,7 +183,7 @@ export function Home() {
               id="popular"
               items={itemsPopular}
               images={imagesPopular}
-              onOpenItem={onOpenMoviesItem}
+              onOpenItem={onOpenMovie}
             />
           </CarouselContainer>
         )}
@@ -197,7 +197,7 @@ export function Home() {
               id="top-rated"
               items={itemsTopRated}
               images={imagesTopRated}
-              onOpenItem={onOpenMoviesItem}
+              onOpenItem={onOpenMovie}
             />
           </CarouselContainer>
         )}
@@ -211,12 +211,13 @@ export function Home() {
               id="upcoming"
               items={itemsUpcoming}
               images={imagesUpcoming}
-              onOpenItem={onOpenMoviesItem}
+              onOpenItem={onOpenMovie}
             />
           </CarouselContainer>
         )}
       </Carousels>
       <ModalDetailView
+        type="movie"
         pathMatchPattern={pathMatchPattern}
         pathMatchParam={pathMatchParam}
         searchParam={searchParam}

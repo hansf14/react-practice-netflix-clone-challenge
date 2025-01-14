@@ -98,7 +98,7 @@ const CarouselItemBox = styled(motion.div)`
   cursor: pointer;
 `;
 
-export const cssCarouselItemPosterImage = css`
+export const cssItemPosterImage = css`
   display: block;
   max-width: 100%;
   max-height: 100%;
@@ -115,7 +115,7 @@ const CarouselItemPoster = styled.div`
   align-items: center;
 
   img {
-    ${cssCarouselItemPosterImage}
+    ${cssItemPosterImage}
   }
 
   container-name: carousel-item-poster;

@@ -229,7 +229,7 @@ export async function getMoviesUpcoming() {
 export interface MovieDetails {
   adult: boolean;
   backdrop_path: string | null;
-  belongs_to_collection: string | null;
+  belongs_to_collection: Collection | null;
   budget: number;
   genres: Genre[];
   homepage: string;
@@ -255,6 +255,13 @@ export interface MovieDetails {
   vote_count: number;
 }
 
+export interface Collection {
+  backdrop_path: string | null;
+  id: string;
+  name: string;
+  poster_path: string | null;
+}
+
 export interface Genre {
   id: number;
   name: string;
@@ -262,7 +269,7 @@ export interface Genre {
 
 export interface ProductionCompany {
   id: number;
-  logo_path?: string;
+  logo_path: string | null;
   name: string;
   origin_country: string;
 }

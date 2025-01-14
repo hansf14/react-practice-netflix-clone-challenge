@@ -1,18 +1,14 @@
 import { AnimatePresence, motion } from "motion/react";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
-import { styled } from "styled-components";
+import { css, styled } from "styled-components";
 import parse from "html-react-parser";
-import {
-  cssCarouselItemPosterImage,
-  OnOpenItemParams,
-} from "@/components/Carousel";
+import { cssItemPosterImage } from "@/components/Carousel";
 import { useLocation, useMatch } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { preloadImage, StyledComponentProps } from "@/utils";
 import { getImageUrl, getMovieDetails } from "@/api";
-import { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import netflixInitialLogo from "@/assets/netflix-initial-logo.png";
-import { queryClient } from "@/queryClient";
 
 const ModalOverlay = styled(motion.div)`
   z-index: 9999;
@@ -63,7 +59,7 @@ const Modal = styled.div`
 
 const ModalContent = styled.div``;
 
-const SelectedItemPoster = styled.div`
+const ItemPoster = styled.div`
   float: left;
   aspect-ratio: 2 / 3;
   max-width: 40cqw;
@@ -76,18 +72,66 @@ const SelectedItemPoster = styled.div`
   overflow: hidden;
 
   img {
-    ${cssCarouselItemPosterImage}
+    ${cssItemPosterImage}
     object-fit: contain;
   }
 `;
 
-const SelectedItemTitle = styled.h2`
+const ItemTitle = styled.h2`
   overflow: hidden; // for BFC (block formatting context)(take remaining space)
 
   font-size: 28px;
+  font-weight: bold;
   text-align: center;
 
-  padding: 10px 15px 10px 25px;
+  padding: 20px 15px 25px 25px;
+`;
+
+const cssItemField = css`
+  overflow: hidden;
+  padding: 0 15px 0 15px;
+  font-size: 16px;
+  line-height: 1.2;
+
+  &:not(last-child) {
+    margin-bottom: 2px;
+  }
+`;
+
+const ItemField = styled.div`
+  ${cssItemField}
+`;
+
+const ItemFieldFlex = styled.div`
+  ${cssItemField}
+  display: flex;
+`;
+
+const ItemLabel = styled.span`
+  font-weight: bold;
+  float: left;
+  white-space: nowrap;
+`;
+
+const ItemLabelContent = styled.p`
+  display: inline;
+  white-space: pre-wrap;
+`;
+
+const ItemLabelContentFlex = styled.p`
+  display: flex;
+  flex-direction: column;
+  white-space: pre-wrap;
+  justify-content: center;
+`;
+
+const ItemContentImage = styled.img`
+  background-color: #fff;
+  ${cssItemPosterImage}
+  object-fit: contain;
+  width: 100px;
+  height: unset;
+  display: inline-block;
 `;
 
 export type OnCloseItemParams = {
@@ -98,6 +142,7 @@ export type OnCloseItemParams = {
 export type OnCloseItem = ({ itemId, title }: OnCloseItemParams) => void;
 
 export type ModalDetailViewProps = {
+  type: "movie" | "tv-show";
   pathMatchPattern: string;
   pathMatchParam: string;
   searchParam: string;
@@ -112,6 +157,7 @@ export const ModalDetailView = withMemoAndRef<
   displayName: "ModalDetailView",
   Component: (
     {
+      type,
       pathMatchPattern,
       pathMatchParam,
       searchParam: _searchParam,
@@ -121,7 +167,7 @@ export const ModalDetailView = withMemoAndRef<
   ) => {
     const pathMatch = useMatch(pathMatchPattern);
     const location = useLocation();
-    console.log(location);
+    // console.log(location);
 
     const searchParam = new URLSearchParams(location.search).get(_searchParam);
 
@@ -131,16 +177,22 @@ export const ModalDetailView = withMemoAndRef<
         if (!pathMatch) {
           return null;
         }
-        const movieId = pathMatch.params[pathMatchParam];
-        if (!movieId) {
+        const itemId = pathMatch.params[pathMatchParam];
+        if (!itemId) {
           return null;
         }
-        return getMovieDetails({ movieId });
+
+        if (type === "movie") {
+          return getMovieDetails({ movieId: itemId });
+        } else if (type === "tv-show") {
+          return null;
+        }
+        return null;
       },
       refetchOnWindowFocus: false,
       enabled: !!pathMatch,
     });
-    // console.log(movieDetailData);
+    console.log(movieDetailData);
 
     const imageSrcForPreload = useMemo(() => {
       if (location.state) {
@@ -168,7 +220,7 @@ export const ModalDetailView = withMemoAndRef<
       return preloadedImageComponent as React.JSX.Element;
     }, [imageSrcForPreload]);
 
-    console.log(["preloadImage", imageSrcForPreload]);
+    // console.log(["preloadImage", imageSrcForPreload]);
     const { data: imageComponent } = useQuery({
       queryKey: ["preloadImage", imageSrcForPreload],
       queryFn: () => {
@@ -179,31 +231,6 @@ export const ModalDetailView = withMemoAndRef<
       enabled: !!pathMatch,
     });
 
-    // const selectedItemIndex = useMemo(
-    //   () =>
-    //     pathMatch && pathMatch.params[pathMatchParam]
-    //       ? (items.findIndex(
-    //           (item) => item.id.toString() === pathMatch.params[pathMatchParam],
-    //         ) ?? -1)
-    //       : -1,
-    //   [items, pathMatch, pathMatchParam],
-    // );
-
-    // const selectedItem =
-    //   selectedItemIndex === -1 ? null : items[selectedItemIndex];
-
-    // const [stateSelectedItemImage, setStateSelectedItemImage] =
-    //   useState<React.ReactNode>(null);
-
-    // const imageComponent = imageComponentObjs[selectedItemIndex]?.data;
-    // useEffect(() => {
-    //   if (selectedItemIndex !== -1) {
-    //     setStateSelectedItemImage(imageComponent ?? null);
-    //   }
-    // }, [selectedItemIndex, imageComponentObjs, imageComponent]);
-    // imageComponentObjs[selectedItemIndex]?.data
-    // ㄴ React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.
-
     const onClickModalOverlay = useCallback(
       ({ itemId, title }: OnCloseItemParams) =>
         () => {
@@ -211,6 +238,19 @@ export const ModalDetailView = withMemoAndRef<
         },
       [_onClickModalOverlay],
     );
+
+    const collectionImageSrc = !!movieDetailData?.belongs_to_collection
+      ?.poster_path
+      ? getImageUrl({
+          pathSegment: movieDetailData.belongs_to_collection.poster_path,
+          format: "w500",
+        })
+      : !!movieDetailData?.belongs_to_collection?.backdrop_path
+        ? getImageUrl({
+            pathSegment: movieDetailData.belongs_to_collection.backdrop_path,
+            format: "w500",
+          })
+        : netflixInitialLogo;
 
     return (
       <AnimatePresence>
@@ -241,11 +281,214 @@ export const ModalDetailView = withMemoAndRef<
             >
               <Modal>
                 <ModalContent>
-                  <SelectedItemPoster>{imageComponent}</SelectedItemPoster>
-                  <SelectedItemTitle>
-                    Hello
-                    {/* {selectedItem.title} */}
-                  </SelectedItemTitle>
+                  <ItemPoster>{imageComponent}</ItemPoster>
+                  {movieDetailData && (
+                    <>
+                      <ItemTitle>{movieDetailData.title}</ItemTitle>
+                      {type === "movie" && (
+                        <>
+                          <ItemField>
+                            <ItemLabel>Original Title</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.original_title}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>Status</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.status}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>Release Date</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.release_date}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>Genres</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.genres.map(
+                                (genre, index, genres) => {
+                                  return (
+                                    <span key={index}>
+                                      {genre.name}
+                                      {index !== genres.length - 1 && ", "}
+                                    </span>
+                                  );
+                                },
+                              )}
+                            </ItemLabelContent>
+                          </ItemField>
+                          <ItemField>
+                            <ItemLabel>Runtime</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.runtime}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>Popularity</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.popularity}
+                            </ItemLabelContent>
+                          </ItemField>
+                          <ItemField>
+                            <ItemLabel>Vote Average</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.vote_average}
+                            </ItemLabelContent>
+                          </ItemField>
+                          <ItemField>
+                            <ItemLabel>Vote Count</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.vote_count}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>Budget</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.budget.toLocaleString("en-US")}{" "}
+                              USD
+                            </ItemLabelContent>
+                          </ItemField>
+                          <ItemField>
+                            <ItemLabel>Revenue</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.revenue.toLocaleString("en-US")}
+                            </ItemLabelContent>
+                            USD
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>Spoken Languages</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.spoken_languages.map(
+                                (language, index, languages) => {
+                                  return (
+                                    <React.Fragment key={index}>
+                                      <span>{language.english_name}</span>
+                                      {language.name &&
+                                        language.name !== "English" && (
+                                          <>
+                                            {" "}
+                                            <span>
+                                              &lt;{language.name}
+                                              &gt;
+                                            </span>
+                                          </>
+                                        )}
+                                      {index !== languages.length - 1 && ", "}
+                                    </React.Fragment>
+                                  );
+                                },
+                              )}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>Tagline</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.tagline}
+                            </ItemLabelContent>
+                          </ItemField>
+                          <ItemField>
+                            <ItemLabel>Overview</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.overview}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>Homepage</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              <a href={movieDetailData.homepage}>
+                                {movieDetailData.homepage.replace(
+                                  /^https?:\/\//,
+                                  "",
+                                )}
+                              </a>
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>Production Countries</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.production_countries.map(
+                                (country, index, countries) => {
+                                  return (
+                                    <React.Fragment key={index}>
+                                      <span>{country.name}</span>
+                                      {index !== countries.length - 1 && ", "}
+                                    </React.Fragment>
+                                  );
+                                },
+                              )}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemFieldFlex>
+                            <ItemLabel>Production Companies</ItemLabel>
+                            <ItemLabelContentFlex>
+                              {movieDetailData.production_companies.map(
+                                (company, index) => {
+                                  return (
+                                    <React.Fragment key={index}>
+                                      {company.logo_path && (
+                                        <ItemContentImage
+                                          src={getImageUrl({
+                                            pathSegment: company.logo_path,
+                                            format: "w500",
+                                          })}
+                                        />
+                                      )}
+                                      <span>{company.name}</span>
+                                      <>
+                                        {" "}
+                                        <span>
+                                          &lt;{company.origin_country}
+                                          &gt;
+                                        </span>
+                                      </>
+                                    </React.Fragment>
+                                  );
+                                },
+                              )}
+                            </ItemLabelContentFlex>
+                          </ItemFieldFlex>
+
+                          {movieDetailData.belongs_to_collection && (
+                            <ItemFieldFlex>
+                              <ItemLabel>Collection</ItemLabel>
+                              <ItemLabelContentFlex>
+                                <ItemContentImage src={collectionImageSrc} />
+                                {movieDetailData.belongs_to_collection.name}
+                              </ItemLabelContentFlex>
+                            </ItemFieldFlex>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
                 </ModalContent>
               </Modal>
             </ModalContainer>
