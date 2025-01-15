@@ -28,6 +28,7 @@ import {
 } from "@/components/Carousels";
 import { Error as ErrorComponent } from "@/components/Error";
 import { ModalDetailView, OnCloseItem } from "@/components/ModalDetailView";
+import { useDomainBoundNavigateBack } from "@/hooks/useDomainBoundNavigateBack";
 
 const HomeBase = styled.div``;
 
@@ -78,6 +79,7 @@ export function Home() {
   const isSmallerEqual600px = useMedia("(max-width: 600px)");
 
   const navigate = useNavigate();
+  const { domainBoundNavigateBack } = useDomainBoundNavigateBack();
 
   const pathMatchParam = "movieId";
   const pathMatchPattern = `${BASE_PATH}/movies/:${pathMatchParam}`;
@@ -100,9 +102,9 @@ export function Home() {
   const onClickModalOverlay = useCallback<OnCloseItem>(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ({ itemId, title }) => {
-      navigate(-1);
+      domainBoundNavigateBack({ basePath: BASE_PATH });
     },
-    [navigate],
+    [domainBoundNavigateBack],
   );
 
   const {

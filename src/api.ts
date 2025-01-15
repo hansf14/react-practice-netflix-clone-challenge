@@ -296,7 +296,6 @@ export async function getMovieDetails({ movieId }: GetMovieDetailsParams) {
       `${API_BASE_URL}/movie/${movieId}?language=en-US`,
       fetchOptions,
     );
-    console.log(response);
     if (!response.ok) {
       throw new Error(
         `Error: ${response.status} ${response.statusText} (movieId: ${movieId})`,
@@ -325,7 +324,6 @@ export async function getMoviesSimilar({ movieId }: GetMoviesSimilarParams) {
       `${API_BASE_URL}/movie/${movieId}/similar?language=en-US&page=1`,
       fetchOptions,
     );
-    console.log(response);
     if (!response.ok) {
       throw new Error(
         `Error: ${response.status} ${response.statusText} (movieId: ${movieId})`,
@@ -356,7 +354,6 @@ export async function getMoviesRecommended({
       `${API_BASE_URL}/movie/${movieId}/recommendations?language=en-US&page=1`,
       fetchOptions,
     );
-    console.log(response);
     if (!response.ok) {
       throw new Error(
         `Error: ${response.status} ${response.statusText} (movieId: ${movieId})`,
@@ -561,7 +558,6 @@ export async function getTvShowDetails({ tvShowId }: GetTvShowDetailsParams) {
       `${API_BASE_URL}/tv/${tvShowId}?language=en-US`,
       fetchOptions,
     );
-    console.log(response);
     if (!response.ok) {
       throw new Error(
         `Error: ${response.status} ${response.statusText} (tvShowId: ${tvShowId})`,
@@ -590,7 +586,6 @@ export async function getTvShowsSimilar({ tvShowId }: GetTvShowsSimilarParams) {
       `${API_BASE_URL}/tv/${tvShowId}/similar?language=en-US&page=1`,
       fetchOptions,
     );
-    console.log(response);
     if (!response.ok) {
       throw new Error(
         `Error: ${response.status} ${response.statusText} (tvShowId: ${tvShowId})`,
@@ -621,7 +616,6 @@ export async function getTvShowsRecommended({
       `${API_BASE_URL}/tv/${tvShowId}/recommendations?language=en-US&page=1`,
       fetchOptions,
     );
-    console.log(response);
     if (!response.ok) {
       throw new Error(
         `Error: ${response.status} ${response.statusText} (tvShowId: ${tvShowId})`,

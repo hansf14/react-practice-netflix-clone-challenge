@@ -3,10 +3,15 @@ import { Button, Result, ResultProps } from "antd";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
 import { useNavigate } from "react-router-dom";
 import { StyledComponentProps } from "@/utils";
+import { useDomainBoundNavigateBack } from "@/hooks/useDomainBoundNavigateBack";
+import { BASE_PATH } from "@/api";
 
 const ErrorBase = styled(Result)`
+  align-self: center;
+  margin: auto;
+
   &&& .ant-result-icon .anticon {
-    color: #ff4500;
+    color: #e50914;
   }
   &&& .ant-result-title {
     color: #fff;
@@ -14,9 +19,18 @@ const ErrorBase = styled(Result)`
   &&& .ant-result-subtitle {
     color: #fff;
   }
+  &&& .ant-result-extra {
+    display: flex;
+    justify-content: center;
+  }
 `;
 
-// const Buttons
+const Buttons = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+`;
 
 const RefreshButton = styled(Button)`
   font-weight: bold;
@@ -28,13 +42,14 @@ const GoBackButton = styled(Button)`
   color: #000;
 `;
 
-type ErrorProps = {
+export type ErrorProps = {
   resultProps?: ResultProps;
 } & StyledComponentProps<"div">;
 
 export const Error = withMemoAndRef<"div", HTMLDivElement, ErrorProps>({
   displayName: "Error",
   Component: ({ resultProps = {}, ...otherProps }, ref) => {
+    const { domainBoundNavigateBack } = useDomainBoundNavigateBack();
     const navigate = useNavigate();
 
     const refreshPage = () => {
@@ -42,7 +57,7 @@ export const Error = withMemoAndRef<"div", HTMLDivElement, ErrorProps>({
     };
 
     const goPrevPage = () => {
-      navigate(-1);
+      domainBoundNavigateBack({ basePath: BASE_PATH });
     };
 
     return (
@@ -52,12 +67,20 @@ export const Error = withMemoAndRef<"div", HTMLDivElement, ErrorProps>({
         title="Error"
         subTitle="An error occurred while fetching the data."
         extra={[
-          <RefreshButton key="refresh" onClick={refreshPage}>
-            Refresh
-          </RefreshButton>,
-          <GoBackButton key="go-back" onClick={goPrevPage}>
-            Go Back
-          </GoBackButton>,
+          <Buttons key="buttons">
+            <RefreshButton
+              // key="refresh"
+              onClick={refreshPage}
+            >
+              Refresh
+            </RefreshButton>
+            <GoBackButton
+              //  key="go-back"
+              onClick={goPrevPage}
+            >
+              Go Back
+            </GoBackButton>
+          </Buttons>,
         ]}
         {...resultProps}
         {...otherProps}

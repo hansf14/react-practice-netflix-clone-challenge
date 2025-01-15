@@ -28,6 +28,7 @@ import {
 } from "@/components/Carousels";
 import { ModalDetailView, OnCloseItem } from "@/components/ModalDetailView";
 import { Error as ErrorComponent } from "@/components/Error";
+import { useDomainBoundNavigateBack } from "@/hooks/useDomainBoundNavigateBack";
 
 const TvShowsBase = styled.div``;
 
@@ -59,6 +60,7 @@ export function TvShows() {
 
   const isSmallerEqual600px = useMedia("(max-width: 600px)");
   const navigate = useNavigate();
+  const { domainBoundNavigateBack } = useDomainBoundNavigateBack();
 
   const pathMatchParam = "tvShowId";
   const pathMatchPattern = `${BASE_PATH}/tv-shows/:${pathMatchParam}`;
@@ -79,9 +81,9 @@ export function TvShows() {
   const onClickModalOverlay = useCallback<OnCloseItem>(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ({ itemId, title }) => {
-      navigate(-1);
+      domainBoundNavigateBack({ basePath: BASE_PATH });
     },
-    [navigate],
+    [domainBoundNavigateBack],
   );
 
   const {

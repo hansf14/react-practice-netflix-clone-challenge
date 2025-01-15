@@ -4,12 +4,14 @@ import Root from "@/Root";
 import { Home } from "@/sections/Home";
 import { Search } from "@/sections/Search";
 import { TvShows } from "@/sections/TvShows";
-import { Result } from "antd";
+import { Error404 } from "@/components/Error404";
+import { Error400 } from "@/components/Error400";
 
 export const router = createBrowserRouter([
   {
     path: `${BASE_PATH}/`,
     element: <Root />,
+    errorElement: <Error400 />,
     children: [
       {
         path: "",
@@ -32,7 +34,10 @@ export const router = createBrowserRouter([
         path: "tv-shows/:tvShowId",
         element: <TvShows />,
       },
-      // TODO: 404
+      {
+        path: "*", // Matches all other paths (404 handler)
+        element: <Error404 />,
+      },
     ],
   },
 ]);

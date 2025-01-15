@@ -35,6 +35,7 @@ import {
 } from "@/hooks/usePreprocessData";
 import { Error as ErrorComponent } from "@/components/Error";
 import { Loader } from "@/components/Loader";
+import { Error404 } from "@/components/Error404";
 
 const ModalOverlay = styled(motion.div)`
   z-index: 900;
@@ -525,14 +526,7 @@ export const ModalDetailView = withMemoAndRef<
               <Modal>
                 <ModalContent>
                   {(movieDetailStatus === "error" ||
-                    tvShowDetailStatus === "error") && (
-                    <ErrorComponent
-                      resultProps={{
-                        title: "Error 404",
-                        subTitle: "The page is not found.",
-                      }}
-                    />
-                  )}
+                    tvShowDetailStatus === "error") && <Error404 />}
                   {(movieDetailStatus === "pending" ||
                     tvShowDetailStatus === "pending") && (
                     <Loader>
