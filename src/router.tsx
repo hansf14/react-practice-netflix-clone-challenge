@@ -1,14 +1,14 @@
+import { Result } from "antd";
+import { createBrowserRouter } from "react-router-dom";
+import { BASE_PATH } from "@/api";
 import Root from "@/Root";
 import { Home } from "@/sections/Home";
 import { Search } from "@/sections/Search";
 import { TvShows } from "@/sections/TvShows";
-import { createBrowserRouter } from "react-router-dom";
-
-export const basePath = "/react-practice-netflix-clone-challenge";
 
 export const router = createBrowserRouter([
   {
-    path: `${basePath}/`,
+    path: `${BASE_PATH}/`,
     element: <Root />,
     children: [
       {
@@ -26,6 +26,7 @@ export const router = createBrowserRouter([
       {
         path: "movies/:movieId",
         element: <Home />,
+        errorElement: <Result />,
       },
       {
         path: "tv-shows/:tvShowId",

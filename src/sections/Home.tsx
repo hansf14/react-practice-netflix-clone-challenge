@@ -11,7 +11,7 @@ import {
   getMoviesTopRated,
   getMoviesUpcoming,
 } from "@/api";
-import { basePath } from "@/router";
+import { BASE_PATH } from "@/api";
 import {
   Banner,
   BannerContent,
@@ -79,7 +79,7 @@ export function Home() {
 
   const navigate = useNavigate();
 
-  const pathMatchPattern = `${basePath}/movies/:movieId`;
+  const pathMatchPattern = `${BASE_PATH}/movies/:movieId`;
   const pathMatchParam = "movieId";
   const searchParam = "list";
 

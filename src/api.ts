@@ -1,3 +1,5 @@
+export const BASE_PATH = "/react-practice-netflix-clone-challenge";
+
 export const API_BASE_URL = "https://api.themoviedb.org/3";
 export const IMAGE_BASE_URL = "https://image.tmdb.org/t/p";
 
@@ -294,6 +296,38 @@ export async function getMovieDetails({ movieId }: GetMovieDetailsParams) {
     fetchOptions,
   );
   return response.json() as unknown as MovieDetails;
+}
+
+export interface GetMoviesSimilarResult {
+  page: number;
+  total_pages: number;
+  results: Movie[];
+  total_results: number;
+}
+
+// https://developer.themoviedb.org/reference/movie-similar
+export async function getMoviesSimilar({ movieId }: GetMovieDetailsParams) {
+  const response = await fetch(
+    `${API_BASE_URL}/movie/${movieId}/similar?language=en-US&page=1`,
+    fetchOptions,
+  );
+  return response.json() as unknown as GetMoviesSimilarResult;
+}
+
+export interface GetMoviesRecommendedResult {
+  page: number;
+  total_pages: number;
+  results: Movie[];
+  total_results: number;
+}
+
+// https://developer.themoviedb.org/reference/movie-recommendations
+export async function getMoviesRecommended({ movieId }: GetMovieDetailsParams) {
+  const response = await fetch(
+    `${API_BASE_URL}/movie/${movieId}/recommendations?language=en-US&page=1`,
+    fetchOptions,
+  );
+  return response.json() as unknown as GetMoviesRecommendedResult;
 }
 
 //////////////////////////////////////////

@@ -13,7 +13,7 @@ import { SubmitHandler, useForm } from "react-hook-form";
 import { SearchProps } from "antd/es/input";
 import { Input, InputRef, Modal } from "antd";
 import { useClickAway, useMedia } from "react-use";
-import { basePath } from "@/router";
+import { BASE_PATH } from "@/api";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
 import { SmartOmit, StyledComponentProps } from "@/utils";
 
@@ -268,8 +268,8 @@ export const HeaderNavBar = withMemoAndRef<
 >({
   displayName: "HeaderNavBar",
   Component: (props, ref) => {
-    const tvShowsPath = `${basePath}/tv-shows`;
-    const homeMatch = useMatch(basePath);
+    const tvShowsPath = `${BASE_PATH}/tv-shows`;
+    const homeMatch = useMatch(BASE_PATH);
     const tvShowsMatch = useMatch(tvShowsPath);
 
     const isSmallerEqual600px = useMedia("(max-width: 600px)");
@@ -457,7 +457,7 @@ export const HeaderNavBar = withMemoAndRef<
             </HeaderNavBarLogo>
             <HeaderNavBarItems>
               <HeaderNavBarItem>
-                <Link to={basePath}>
+                <Link to={BASE_PATH}>
                   Home
                   {homeMatch && (
                     <HeaderNavBarItemCircle layoutId="HeaderNavBarItemCircle" />

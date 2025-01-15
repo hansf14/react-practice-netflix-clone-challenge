@@ -3,6 +3,8 @@ import {
   getImageUrl,
   GetMoviesNowPlayingResult,
   GetMoviesPopularResult,
+  GetMoviesRecommendedResult,
+  GetMoviesSimilarResult,
   GetMoviesTopRatedResult,
   GetMoviesUpcomingResult,
   GetTvShowsOnTheAirResult,
@@ -25,7 +27,10 @@ export const usePreprocessData = <Item extends ItemMovie | ItemTvShow>({
     | GetMoviesPopularResult
     | GetMoviesTopRatedResult
     | GetMoviesUpcomingResult
+    | GetMoviesSimilarResult
+    | GetMoviesRecommendedResult
     | GetTvShowsOnTheAirResult
+    | null
     | undefined;
   dataType?: "movie" | "tv-show";
 }) => {

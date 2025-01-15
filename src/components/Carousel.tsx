@@ -2,11 +2,9 @@ import React, {
   useCallback,
   useEffect,
   useImperativeHandle,
-  useMemo,
   useRef,
   useState,
 } from "react";
-import parse from "html-react-parser";
 import {
   motion,
   MotionProps,
@@ -18,13 +16,12 @@ import { useMedia } from "react-use";
 import { css, styled } from "styled-components";
 import { CaretLeftFill, CaretRightFill } from "react-bootstrap-icons";
 import { useResizeObserver } from "usehooks-ts";
-import { throttle } from "lodash-es";
-import { useQueries, UseQueryOptions } from "@tanstack/react-query";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
-import { preloadAllImages, preloadImage, StyledComponentProps } from "@/utils";
+import { SmartOmit, StyledComponentProps } from "@/utils";
 import netflixInitialLogo from "@/assets/netflix-initial-logo.png";
 import { Error } from "@/components/Error";
 import { Loader } from "@/components/Loader";
+import { useLoadImage } from "@/hooks/useLoadImage";
 
 const CarouselBase = styled.div`
   width: 100%;
@@ -36,11 +33,12 @@ const CarouselBase = styled.div`
 `;
 
 const CarouselRows = styled(motion.div)`
+  will-change: transform;
   display: flex;
   width: fit-content;
 
   gap: 10px;
-  @media (max-width: 600px) {
+  @container (max-width: 600px) {
     & {
       gap: 0;
     }
@@ -51,7 +49,7 @@ const CarouselRow = styled.div`
   flex: 0 0 auto;
   width: 80cqw;
   margin: 0 10cqw;
-  @media (max-width: 1000px) {
+  @container (max-width: 1000px) {
     & {
       width: 100cqw;
       margin: 0;
@@ -67,6 +65,7 @@ const CarouselRowContent = styled(motion.div).withConfig({
   shouldForwardProp: (prop) => !["itemCntPerRow"].includes(prop),
 })<CarouselRowContentProps>`
   transform-style: preserve-3d;
+  will-change: transform;
   width: 100%;
 
   display: grid;
@@ -75,7 +74,7 @@ const CarouselRowContent = styled(motion.div).withConfig({
     1fr
   );
   gap: 10px;
-  @media (max-width: 600px) {
+  @container (max-width: 600px) {
     & {
       gap: 0;
     }
@@ -84,6 +83,7 @@ const CarouselRowContent = styled(motion.div).withConfig({
 
 const CarouselItemBox = styled(motion.div)`
   transform-style: preserve-3d;
+  will-change: transform;
   position: relative;
   width: 100%;
 
@@ -107,7 +107,6 @@ export const cssItemPosterImage = css`
 `;
 
 const CarouselItemPoster = styled.div`
-  // z-index: 100;
   transform: translateZ(5px);
   aspect-ratio: 2 / 3; // Prevent subpixel problem by setting the aspect ratio to the image intrinsic dimension.
 
@@ -132,8 +131,8 @@ const CarouselItemTooltipOverflowParentGuard = styled.div`
 `;
 
 const CarouselItemTooltip = styled(motion.div)`
-  // z-index: 10;
   transform: translateZ(3px);
+  will-change: transform;
   position: absolute;
   bottom: 0;
   width: 100%;
@@ -143,7 +142,7 @@ const CarouselItemTooltip = styled(motion.div)`
   background-color: #eee;
   color: #111;
 
-  @media (max-width: 500px) {
+  @container (max-width: 500px) {
     & {
       padding: 10px 5px;
     }
@@ -154,7 +153,7 @@ const CarouselItemTooltipTitle = styled.h3`
   text-align: center;
 
   font-size: 14px;
-  @media (max-width: 500px) {
+  @container (max-width: 500px) {
     & {
       font-size: 12px;
     }
@@ -261,63 +260,15 @@ export type CarouselProps = {
   items: CarouselItem[];
   images: string[];
   onOpenItem?: OnOpenItem;
-} & StyledComponentProps<"div">;
+} & SmartOmit<StyledComponentProps<"div">, "children">;
 
 export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
   displayName: "Carousel",
   Component: ({ id, items, images, onOpenItem, ...otherProps }, ref) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const loadImages = useCallback(async () => {
-      const imageSrcArrForPreload = images;
-      const preloadedImageElements = await preloadAllImages({
-        srcArr: imageSrcArrForPreload,
-      });
-      // console.log(preloadedImageElements);
-
-      const preloadedImageComponents = preloadedImageElements.map((element) =>
-        element?.outerHTML ? (
-          parse(element?.outerHTML)
-        ) : (
-          <img src={netflixInitialLogo} /> // Fallback
-        ),
-      );
-      return preloadedImageComponents as React.JSX.Element[];
-    }, [images]);
-
-    const loadImage = useCallback(
-      async ({ index }: { index: number }) => {
-        const imageSrcForPreload = images[index];
-        const preloadedImageElement = await preloadImage({
-          src: imageSrcForPreload,
-        });
-
-        const preloadedImageComponent = preloadedImageElement?.outerHTML ? (
-          parse(preloadedImageElement?.outerHTML)
-        ) : (
-          <img src={netflixInitialLogo} /> // Fallback
-        );
-        return preloadedImageComponent as React.JSX.Element;
-      },
-      [images],
-    );
-
-    const queryOptionsArr = useMemo(() => {
-      return images.map((src, index) => {
-        const queryOptions: UseQueryOptions<
-          React.JSX.Element,
-          unknown,
-          React.JSX.Element
-        > = {
-          queryKey: ["preloadImage", src],
-          queryFn: () => {
-            return loadImage({ index });
-          },
-          refetchOnWindowFocus: false,
-        };
-        return queryOptions;
-      });
-    }, [images, loadImage]);
-    const imageComponentObjs = useQueries({ queries: queryOptionsArr });
+    const { imageComponentObjs } = useLoadImage({
+      images,
+      fallbackImage: netflixInitialLogo,
+    });
 
     const refBase = useRef<HTMLDivElement | null>(null);
     useImperativeHandle(ref, () => {
@@ -338,16 +289,22 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     const rowsAnimation = useAnimation();
 
     const refSize = useRef<Size>({ width: undefined, height: undefined });
-    const onResize = useMemo(
-      () =>
-        throttle(
-          ({ width, height }: Size) => {
-            refSize.current = { width, height };
-          },
-          100,
-          { leading: true },
-        ),
-      [],
+    const onResize = useCallback(
+      ({ width, height }: Size) => {
+        refSize.current = { width, height };
+
+        if (refSize.current.width) {
+          rowsAnimation.start({
+            x:
+              -stateCurrentRowIndex * refSize.current.width +
+              (stateCurrentRowIndex > 0 ? -stateCurrentRowIndex * gap : 0),
+            transition: {
+              duration: 0,
+            },
+          });
+        }
+      },
+      [gap, rowsAnimation, stateCurrentRowIndex],
     );
 
     useResizeObserver({
@@ -443,27 +400,6 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
         })();
       }
     }, [stateCurrentRowIndex, maxRowIndex, changeCurrentRowIndexTo]);
-
-    const windowResizeHandler = useCallback(() => {
-      // console.log(stateCurrentRowIndex);
-      if (refSize.current.width) {
-        rowsAnimation.start({
-          x:
-            -stateCurrentRowIndex * refSize.current.width +
-            (stateCurrentRowIndex > 0 ? -stateCurrentRowIndex * gap : 0),
-          transition: {
-            duration: 0,
-          },
-        });
-      }
-    }, [gap, stateCurrentRowIndex, rowsAnimation]);
-
-    useEffect(() => {
-      window.addEventListener("resize", windowResizeHandler);
-      return () => {
-        window.removeEventListener("resize", windowResizeHandler);
-      };
-    }, [windowResizeHandler]);
 
     //////////////////////////////////////////
     // To support both drag & click

@@ -3,7 +3,7 @@ import { styled } from "styled-components";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useMedia } from "react-use";
-import { Carousel, OnCloseItem, OnOpenItem } from "@/components/Carousel";
+import { Carousel, OnOpenItem } from "@/components/Carousel";
 import { ItemMovie, usePreprocessData } from "@/hooks/usePreprocessData";
 import {
   getTvShowsAiringToday,
@@ -11,7 +11,7 @@ import {
   getTvShowsPopular,
   getTvShowsTopRated,
 } from "@/api";
-import { basePath } from "@/router";
+import { BASE_PATH } from "@/api";
 import {
   Banner,
   BannerContent,
@@ -67,9 +67,9 @@ export function TvShows() {
     [navigate],
   );
 
-  const onCloseMoviesItem = useCallback<OnCloseItem>(() => {
-    navigate(-1);
-  }, [navigate]);
+  // const onCloseMoviesItem = useCallback<OnCloseItem>(() => {
+  //   navigate(-1);
+  // }, [navigate]);
 
   const {
     bannerMovieImageSrc,
@@ -124,7 +124,7 @@ export function TvShows() {
           )}
         </>
       )}
-      <Carousels>
+      {/* <Carousels>
         {isSuccessAiringToday && dataAiringToday.results.length && (
           <CarouselContainer>
             <CarouselTitle>Airing Today</CarouselTitle>
@@ -135,7 +135,7 @@ export function TvShows() {
               id="airing-today"
               items={itemsAiringToday}
               images={imagesAiringToday}
-              pathMatchPattern={`${basePath}/tv-shows/:tvShowId`}
+              pathMatchPattern={`${BASE_PATH}/tv-shows/:tvShowId`}
               pathMatchParam="tvShowId"
               searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
@@ -153,7 +153,7 @@ export function TvShows() {
               id="on-the-air"
               items={itemsOnTheAir}
               images={imagesOnTheAir}
-              pathMatchPattern={`${basePath}/tv-shows/:tvShowId`}
+              pathMatchPattern={`${BASE_PATH}/tv-shows/:tvShowId`}
               pathMatchParam="tvShowId"
               searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
@@ -171,7 +171,7 @@ export function TvShows() {
               id="popular"
               items={itemsPopular}
               images={imagesPopular}
-              pathMatchPattern={`${basePath}/tv-shows/:tvShowId`}
+              pathMatchPattern={`${BASE_PATH}/tv-shows/:tvShowId`}
               pathMatchParam="tvShowId"
               searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
@@ -189,7 +189,7 @@ export function TvShows() {
               id="top-rated"
               items={itemsTopRated}
               images={imagesTopRated}
-              pathMatchPattern={`${basePath}/tv-shows/:tvShowId`}
+              pathMatchPattern={`${BASE_PATH}/tv-shows/:tvShowId`}
               pathMatchParam="tvShowId"
               searchParam={searchParam}
               onOpenItem={onOpenMoviesItem}
@@ -197,7 +197,7 @@ export function TvShows() {
             />
           </CarouselContainer>
         )}
-      </Carousels>
+      </Carousels> */}
     </HomeBase>
   );
 }

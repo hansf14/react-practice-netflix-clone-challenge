@@ -1,14 +1,20 @@
+import React, { useCallback, useMemo } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
 import { css, styled } from "styled-components";
-import parse from "html-react-parser";
-import { cssItemPosterImage } from "@/components/Carousel";
+import { Carousel, cssItemPosterImage } from "@/components/Carousel";
 import { useLocation, useMatch } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { preloadImage, StyledComponentProps } from "@/utils";
-import { getImageUrl, getMovieDetails } from "@/api";
-import React, { useCallback, useMemo } from "react";
+import { StyledComponentProps } from "@/utils";
+import {
+  getImageUrl,
+  getMovieDetails,
+  getMoviesRecommended,
+  getMoviesSimilar,
+} from "@/api";
 import netflixInitialLogo from "@/assets/netflix-initial-logo.png";
+import { loadImage, useLoadImage } from "@/hooks/useLoadImage";
+import { ItemMovie, usePreprocessData } from "@/hooks/usePreprocessData";
 
 const ModalOverlay = styled(motion.div)`
   z-index: 9999;
@@ -25,7 +31,7 @@ const ModalContainer = styled(motion.div)`
   z-index: 10000;
   position: fixed;
 
-  width: clamp(280px, 80%, 1000px);
+  width: clamp(280px, 80%, 700px);
   height: 80vh;
 
   container-name: modal-container;
@@ -47,20 +53,18 @@ const ModalContainer = styled(motion.div)`
 const Modal = styled.div`
   width: 100%;
   height: 100%;
-  overflow: auto;
+  overflow-y: scroll;
+  overflow-x: hidden;
   overscroll-behavior: none;
-
-  &::after {
-    content: "";
-    display: table;
-    clear: both;
-  }
 `;
 
-const ModalContent = styled.div``;
+const ModalContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
 
 const ItemPoster = styled.div`
-  float: left;
   aspect-ratio: 2 / 3;
   max-width: 40cqw;
 
@@ -78,8 +82,6 @@ const ItemPoster = styled.div`
 `;
 
 const ItemTitle = styled.h2`
-  overflow: hidden; // for BFC (block formatting context)(take remaining space)
-
   font-size: 28px;
   font-weight: bold;
   text-align: center;
@@ -87,14 +89,29 @@ const ItemTitle = styled.h2`
   padding: 20px 15px 25px 25px;
 `;
 
+const ItemDivider = styled.hr`
+  width: 100%;
+  margin-bottom: 20px;
+`;
+
+const ItemContent = styled.div``;
+
 const cssItemField = css`
-  overflow: hidden;
-  padding: 0 15px 0 15px;
+  position: relative;
+  padding: 0 15px 0 30px;
   font-size: 16px;
   line-height: 1.2;
 
-  &:not(last-child) {
+  &:not(:last-child) {
     margin-bottom: 2px;
+  }
+
+  &::before {
+    content: "·";
+    font-weight: bold;
+    display: block;
+    position: absolute;
+    left: 15px;
   }
 `;
 
@@ -104,7 +121,9 @@ const ItemField = styled.div`
 
 const ItemFieldFlex = styled.div`
   ${cssItemField}
+
   display: flex;
+  flex-direction: column;
 `;
 
 const ItemLabel = styled.span`
@@ -118,11 +137,45 @@ const ItemLabelContent = styled.p`
   white-space: pre-wrap;
 `;
 
-const ItemLabelContentFlex = styled.p`
+const ItemLabelContentFlex = styled.div`
+  margin: 6px 0;
+
   display: flex;
   flex-direction: column;
-  white-space: pre-wrap;
   justify-content: center;
+  white-space: pre-wrap;
+`;
+
+const ItemLabelContentGrid = styled.div`
+  margin: 6px 0;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-auto-rows: 150px;
+  white-space: pre-wrap;
+  gap: 1px;
+  background-color: #010101; // #fff;
+  border: 1px solid #010101; // #fff;
+
+  > * {
+    background-color: #fff; // #010101;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    color: #010101;
+    text-align: center;
+  }
+
+  span {
+    padding: 0 8px;
+    line-height: 1.2;
+
+    &:first-of-type {
+      margin-top: 10px;
+    }
+  }
 `;
 
 const ItemContentImage = styled.img`
@@ -131,7 +184,6 @@ const ItemContentImage = styled.img`
   object-fit: contain;
   width: 100px;
   height: unset;
-  display: inline-block;
 `;
 
 export type OnCloseItemParams = {
@@ -172,7 +224,7 @@ export const ModalDetailView = withMemoAndRef<
     const searchParam = new URLSearchParams(location.search).get(_searchParam);
 
     const { data: movieDetailData } = useQuery({
-      queryKey: [location.pathname],
+      queryKey: [location.pathname, "detail"],
       queryFn: () => {
         if (!pathMatch) {
           return null;
@@ -192,9 +244,9 @@ export const ModalDetailView = withMemoAndRef<
       refetchOnWindowFocus: false,
       enabled: !!pathMatch,
     });
-    console.log(movieDetailData);
+    // console.log(movieDetailData);
 
-    const imageSrcForPreload = useMemo(() => {
+    const imageMainPosterSrc = useMemo<string | undefined>(() => {
       if (location.state) {
         return location.state.image;
       }
@@ -207,28 +259,80 @@ export const ModalDetailView = withMemoAndRef<
         : netflixInitialLogo;
     }, [location.state, movieDetailData?.poster_path]);
 
-    const loadImage = useCallback(async () => {
-      const preloadedImageElement = await preloadImage({
-        src: imageSrcForPreload,
-      });
-
-      const preloadedImageComponent = preloadedImageElement?.outerHTML ? (
-        parse(preloadedImageElement?.outerHTML)
-      ) : (
-        <img src={netflixInitialLogo} /> // Fallback
-      );
-      return preloadedImageComponent as React.JSX.Element;
-    }, [imageSrcForPreload]);
-
-    // console.log(["preloadImage", imageSrcForPreload]);
-    const { data: imageComponent } = useQuery({
-      queryKey: ["preloadImage", imageSrcForPreload],
+    const { data: imageMainPosterData } = useQuery({
+      queryKey: ["preloadImage", imageMainPosterSrc],
       queryFn: () => {
-        return loadImage();
+        if (!imageMainPosterSrc) {
+          return null;
+        }
+        return loadImage({
+          src: imageMainPosterSrc,
+          fallbackImage: netflixInitialLogo,
+        });
       },
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
       enabled: !!pathMatch,
+    });
+    const { imageComponent } = imageMainPosterData ?? {};
+
+    const { data: moviesSimilarData } = useQuery({
+      queryKey: [location.pathname, "similar"],
+      queryFn: () => {
+        if (!pathMatch) {
+          return null;
+        }
+        const itemId = pathMatch.params[pathMatchParam];
+        if (!itemId) {
+          return null;
+        }
+
+        if (type === "movie") {
+          return getMoviesSimilar({ movieId: itemId });
+        } else if (type === "tv-show") {
+          return null;
+        }
+        return null;
+      },
+      refetchOnWindowFocus: false,
+      enabled: !!pathMatch,
+    });
+
+    const { data: moviesRecommendedData } = useQuery({
+      queryKey: [location.pathname, "recommended"],
+      queryFn: () => {
+        if (!pathMatch) {
+          return null;
+        }
+        const itemId = pathMatch.params[pathMatchParam];
+        if (!itemId) {
+          return null;
+        }
+
+        if (type === "movie") {
+          return getMoviesRecommended({ movieId: itemId });
+        } else if (type === "tv-show") {
+          return null;
+        }
+        return null;
+      },
+      refetchOnWindowFocus: false,
+      enabled: !!pathMatch,
+    });
+
+    const { images: imagesSimilar, items: itemsSimilar } =
+      usePreprocessData<ItemMovie>({ data: moviesSimilarData });
+
+    const { images: imagesRecommended, items: itemsRecommended } =
+      usePreprocessData<ItemMovie>({ data: moviesRecommendedData });
+
+    const { imageComponentObjs: imageSimilarComponentObjs } = useLoadImage({
+      images: imagesSimilar,
+      fallbackImage: netflixInitialLogo,
+    });
+
+    const { imageComponentObjs: imageRecommendedComponentObjs } = useLoadImage({
+      images: imagesRecommended,
+      fallbackImage: netflixInitialLogo,
     });
 
     const onClickModalOverlay = useCallback(
@@ -281,12 +385,16 @@ export const ModalDetailView = withMemoAndRef<
             >
               <Modal>
                 <ModalContent>
-                  <ItemPoster>{imageComponent}</ItemPoster>
+                  {/* <ItemPoster>{imageComponent}</ItemPoster> */}
+                  {/* TODO: ㄴ imageComponent && loader */}
                   {movieDetailData && (
                     <>
                       <ItemTitle>{movieDetailData.title}</ItemTitle>
+
+                      <ItemDivider />
+
                       {type === "movie" && (
-                        <>
+                        <ItemContent>
                           <ItemField>
                             <ItemLabel>Original Title</ItemLabel>
                             {": "}
@@ -382,16 +490,13 @@ export const ModalDetailView = withMemoAndRef<
                                 (language, index, languages) => {
                                   return (
                                     <React.Fragment key={index}>
-                                      <span>{language.english_name}</span>
+                                      <span>{language.english_name}</span>{" "}
                                       {language.name &&
                                         language.name !== "English" && (
-                                          <>
-                                            {" "}
-                                            <span>
-                                              &lt;{language.name}
-                                              &gt;
-                                            </span>
-                                          </>
+                                          <span>
+                                            &lt;{language.name}
+                                            &gt;
+                                          </span>
                                         )}
                                       {index !== languages.length - 1 && ", "}
                                     </React.Fragment>
@@ -448,11 +553,11 @@ export const ModalDetailView = withMemoAndRef<
 
                           <ItemFieldFlex>
                             <ItemLabel>Production Companies</ItemLabel>
-                            <ItemLabelContentFlex>
+                            <ItemLabelContentGrid>
                               {movieDetailData.production_companies.map(
                                 (company, index) => {
                                   return (
-                                    <React.Fragment key={index}>
+                                    <div key={index}>
                                       {company.logo_path && (
                                         <ItemContentImage
                                           src={getImageUrl({
@@ -461,19 +566,16 @@ export const ModalDetailView = withMemoAndRef<
                                           })}
                                         />
                                       )}
-                                      <span>{company.name}</span>
-                                      <>
-                                        {" "}
-                                        <span>
-                                          &lt;{company.origin_country}
-                                          &gt;
-                                        </span>
-                                      </>
-                                    </React.Fragment>
+                                      <span>{company.name}</span>{" "}
+                                      <span>
+                                        &lt;{company.origin_country}
+                                        &gt;
+                                      </span>
+                                    </div>
                                   );
                                 },
                               )}
-                            </ItemLabelContentFlex>
+                            </ItemLabelContentGrid>
                           </ItemFieldFlex>
 
                           {movieDetailData.belongs_to_collection && (
@@ -481,11 +583,24 @@ export const ModalDetailView = withMemoAndRef<
                               <ItemLabel>Collection</ItemLabel>
                               <ItemLabelContentFlex>
                                 <ItemContentImage src={collectionImageSrc} />
-                                {movieDetailData.belongs_to_collection.name}
+                                <span style={{ marginTop: 10 }}>
+                                  {movieDetailData.belongs_to_collection.name}
+                                </span>
                               </ItemLabelContentFlex>
                             </ItemFieldFlex>
                           )}
-                        </>
+
+                          <ItemFieldFlex>
+                            <ItemLabel>Similar</ItemLabel>
+                            <ItemLabelContentFlex>
+                              <Carousel
+                                id="similar"
+                                items={itemsSimilar}
+                                images={imagesSimilar}
+                              />
+                            </ItemLabelContentFlex>
+                          </ItemFieldFlex>
+                        </ItemContent>
                       )}
                     </>
                   )}
