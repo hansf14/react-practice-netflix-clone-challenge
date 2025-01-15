@@ -1023,8 +1023,10 @@ export function scrollContainerToElement({
 
 export const preloadImage = async ({
   src,
+  timeoutThreshold = 0,
 }: {
   src: string;
+  timeoutThreshold?: number;
 }): Promise<HTMLImageElement | null> => {
   try {
     const res = await fetch(src);
@@ -1033,19 +1035,34 @@ export const preloadImage = async ({
 
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.src = URL.createObjectURL(blob);
+      img.src = blobUrl;
+
+      // If the fetched data is not a valid image, the img.onload will never trigger, causing the Promise to hang indefinitely.
+      // Fix: Add a timeout mechanism to prevent the promise from hanging.
+      const timeoutId =
+        timeoutThreshold !== 0
+          ? setTimeout(() => {
+              img.onload = img.onerror = img.onabort = null;
+              URL.revokeObjectURL(blobUrl);
+              reject(
+                new Error(`[preloadImage] Image loading timed out: ${src}`),
+              );
+            }, timeoutThreshold)
+          : 0; // Timeout after 10 seconds
 
       img.onload = () => {
         // Releasing event listeners.
+        clearTimeout(timeoutId);
         img.onload = null;
-        URL.revokeObjectURL(blobUrl);
+        // URL.revokeObjectURL(blobUrl);
         resolve(img);
       };
       // img.onerror = img.onabort = reject(src);
       img.onerror = img.onabort = () => {
         // Releasing event listeners.
+        clearTimeout(timeoutId);
         img.onerror = img.onabort = null;
-        URL.revokeObjectURL(blobUrl);
+        // URL.revokeObjectURL(blobUrl);
         reject(src);
       };
     });

@@ -295,9 +295,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
 
         if (refSize.current.width) {
           rowsAnimation.start({
-            x:
-              -stateCurrentRowIndex * refSize.current.width +
-              (stateCurrentRowIndex > 0 ? -stateCurrentRowIndex * gap : 0),
+            x: `calc(${-stateCurrentRowIndex * 100}cqw + ${stateCurrentRowIndex > 0 ? -stateCurrentRowIndex * gap : 0}px)`,
             transition: {
               duration: 0,
             },
@@ -323,10 +321,12 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
         stateCurrentRowIndex >= maxRowIndex ? 0 : stateCurrentRowIndex + 1;
 
       if (refSize.current.width) {
+        // cqw로 transform animation 적용시키니까 transform: A -> B -> none -> B 상태로 animation이 진행되는 Framer Motion 버그가 있는듯하다. 거의 다 완료 상태가 되었을때 갑자기 휙 초기 상태에서 완료상태로 빠르게 움직인다.
         await rowsAnimation.start({
           x:
             -nextRowIndex * refSize.current.width +
             (nextRowIndex > 0 ? -nextRowIndex * gap : 0),
+          // x: `calc(${-nextRowIndex * 100}cqw + ${nextRowIndex > 0 ? -nextRowIndex * gap : 0}px)`,
           transition: {
             ease: "easeInOut",
             duration: defaultAnimationDuration,
@@ -345,6 +345,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
           x:
             -prevRowIndex * refSize.current.width +
             (prevRowIndex > 0 ? -prevRowIndex * gap : 0),
+          // x: `calc(${-prevRowIndex * 100}cqw + ${prevRowIndex > 0 ? -prevRowIndex * gap : 0}px)`,
           transition: {
             ease: "easeInOut",
             duration: defaultAnimationDuration,
@@ -376,6 +377,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
               x:
                 -indexTo * refSize.current.width +
                 (indexTo > 0 ? -indexTo * gap : 0),
+              // x: `calc(${-indexTo * 100}cqw + ${indexTo > 0 ? -indexTo * gap : 0}px)`,
               transition: {
                 ease: "easeInOut",
                 duration: animationDuration,

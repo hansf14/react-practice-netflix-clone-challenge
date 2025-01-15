@@ -28,6 +28,7 @@ import {
 } from "@/components/Carousels";
 import { Error } from "@/components/Error";
 import { ModalDetailView, OnCloseItem } from "@/components/ModalDetailView";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const HomeBase = styled.div``;
 

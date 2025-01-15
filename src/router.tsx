@@ -1,4 +1,3 @@
-import { Result } from "antd";
 import { createBrowserRouter } from "react-router-dom";
 import { BASE_PATH } from "@/api";
 import Root from "@/Root";
@@ -26,7 +25,6 @@ export const router = createBrowserRouter([
       {
         path: "movies/:movieId",
         element: <Home />,
-        errorElement: <Result />,
       },
       {
         path: "tv-shows/:tvShowId",

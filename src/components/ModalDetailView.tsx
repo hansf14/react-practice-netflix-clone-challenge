@@ -247,6 +247,7 @@ export const ModalDetailView = withMemoAndRef<
     // console.log(movieDetailData);
 
     const imageMainPosterSrc = useMemo<string | undefined>(() => {
+      console.log(location.state.image);
       if (location.state) {
         return location.state.image;
       }
@@ -259,81 +260,93 @@ export const ModalDetailView = withMemoAndRef<
         : netflixInitialLogo;
     }, [location.state, movieDetailData?.poster_path]);
 
-    const { data: imageMainPosterData } = useQuery({
+    const { data: imageMainPoster } = useQuery({
       queryKey: ["preloadImage", imageMainPosterSrc],
-      queryFn: () => {
+      queryFn: async () => {
         if (!imageMainPosterSrc) {
           return null;
         }
-        return loadImage({
+        // return loadImage({
+        //   src: imageMainPosterSrc,
+        //   fallbackImage: netflixInitialLogo,
+        // });
+
+        // * React Query 버그인지는 모르겠는데
+        // `queryFn`에서 `return imageComponent`는 가능하지만
+        // `return {
+        //   imageComponent
+        // }`는 가끔씩 에러가 발생한다. (스크롤 빠르게 내릴 때)
+        // Uncaught Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+
+        const { imageComponent } = await loadImage({
           src: imageMainPosterSrc,
           fallbackImage: netflixInitialLogo,
         });
-      },
-      refetchOnWindowFocus: false,
-      enabled: !!pathMatch,
-    });
-    const { imageComponent } = imageMainPosterData ?? {};
-
-    const { data: moviesSimilarData } = useQuery({
-      queryKey: [location.pathname, "similar"],
-      queryFn: () => {
-        if (!pathMatch) {
-          return null;
-        }
-        const itemId = pathMatch.params[pathMatchParam];
-        if (!itemId) {
-          return null;
-        }
-
-        if (type === "movie") {
-          return getMoviesSimilar({ movieId: itemId });
-        } else if (type === "tv-show") {
-          return null;
-        }
-        return null;
+        return imageComponent;
       },
       refetchOnWindowFocus: false,
       enabled: !!pathMatch,
     });
 
-    const { data: moviesRecommendedData } = useQuery({
-      queryKey: [location.pathname, "recommended"],
-      queryFn: () => {
-        if (!pathMatch) {
-          return null;
-        }
-        const itemId = pathMatch.params[pathMatchParam];
-        if (!itemId) {
-          return null;
-        }
+    // const { data: moviesSimilarData } = useQuery({
+    //   queryKey: [location.pathname, "similar"],
+    //   queryFn: () => {
+    //     if (!pathMatch) {
+    //       return null;
+    //     }
+    //     const itemId = pathMatch.params[pathMatchParam];
+    //     if (!itemId) {
+    //       return null;
+    //     }
 
-        if (type === "movie") {
-          return getMoviesRecommended({ movieId: itemId });
-        } else if (type === "tv-show") {
-          return null;
-        }
-        return null;
-      },
-      refetchOnWindowFocus: false,
-      enabled: !!pathMatch,
-    });
+    //     if (type === "movie") {
+    //       return getMoviesSimilar({ movieId: itemId });
+    //     } else if (type === "tv-show") {
+    //       return null;
+    //     }
+    //     return null;
+    //   },
+    //   refetchOnWindowFocus: false,
+    //   enabled: !!pathMatch,
+    // });
 
-    const { images: imagesSimilar, items: itemsSimilar } =
-      usePreprocessData<ItemMovie>({ data: moviesSimilarData });
+    // const { data: moviesRecommendedData } = useQuery({
+    //   queryKey: [location.pathname, "recommended"],
+    //   queryFn: () => {
+    //     if (!pathMatch) {
+    //       return null;
+    //     }
+    //     const itemId = pathMatch.params[pathMatchParam];
+    //     if (!itemId) {
+    //       return null;
+    //     }
 
-    const { images: imagesRecommended, items: itemsRecommended } =
-      usePreprocessData<ItemMovie>({ data: moviesRecommendedData });
+    //     if (type === "movie") {
+    //       return getMoviesRecommended({ movieId: itemId });
+    //     } else if (type === "tv-show") {
+    //       return null;
+    //     }
+    //     return null;
+    //   },
+    //   refetchOnWindowFocus: false,
+    //   enabled: !!pathMatch,
+    // });
 
-    const { imageComponentObjs: imageSimilarComponentObjs } = useLoadImage({
-      images: imagesSimilar,
-      fallbackImage: netflixInitialLogo,
-    });
+    // const { images: imagesSimilar, items: itemsSimilar } =
+    //   usePreprocessData<ItemMovie>({ data: moviesSimilarData });
 
-    const { imageComponentObjs: imageRecommendedComponentObjs } = useLoadImage({
-      images: imagesRecommended,
-      fallbackImage: netflixInitialLogo,
-    });
+    // const { images: imagesRecommended, items: itemsRecommended } =
+    //   usePreprocessData<ItemMovie>({ data: moviesRecommendedData });
+
+    // const { imageComponentObjs: imageSimilarComponentObjs } = useLoadImage({
+    //   images: imagesSimilar,
+    //   fallbackImage: netflixInitialLogo,
+    // });
+
+    // const { imageComponentObjs: imageRecommendedComponentObjs } = useLoadImage({
+    //   images: imagesRecommended,
+    //   fallbackImage: netflixInitialLogo,
+    // });
 
     const onClickModalOverlay = useCallback(
       ({ itemId, title }: OnCloseItemParams) =>
@@ -385,7 +398,7 @@ export const ModalDetailView = withMemoAndRef<
             >
               <Modal>
                 <ModalContent>
-                  {/* <ItemPoster>{imageComponent}</ItemPoster> */}
+                  <ItemPoster>{imageMainPoster}</ItemPoster>
                   {/* TODO: ㄴ imageComponent && loader */}
                   {movieDetailData && (
                     <>
@@ -531,6 +544,7 @@ export const ModalDetailView = withMemoAndRef<
                                   "",
                                 )}
                               </a>
+                              {/* TODO: new tab */}
                             </ItemLabelContent>
                           </ItemField>
 
@@ -590,7 +604,7 @@ export const ModalDetailView = withMemoAndRef<
                             </ItemFieldFlex>
                           )}
 
-                          <ItemFieldFlex>
+                          {/* <ItemFieldFlex>
                             <ItemLabel>Similar</ItemLabel>
                             <ItemLabelContentFlex>
                               <Carousel
@@ -599,7 +613,7 @@ export const ModalDetailView = withMemoAndRef<
                                 images={imagesSimilar}
                               />
                             </ItemLabelContentFlex>
-                          </ItemFieldFlex>
+                          </ItemFieldFlex> */}
                         </ItemContent>
                       )}
                     </>
