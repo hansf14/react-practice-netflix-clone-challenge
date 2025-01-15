@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { styled } from "styled-components";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -6,12 +6,12 @@ import { useMedia } from "react-use";
 import { Carousel, OnOpenItem } from "@/components/Carousel";
 import { ItemMovie, usePreprocessData } from "@/hooks/usePreprocessData";
 import {
+  BASE_PATH,
   getTvShowsAiringToday,
   getTvShowsOnTheAir,
   getTvShowsPopular,
   getTvShowsTopRated,
 } from "@/api";
-import { BASE_PATH } from "@/api";
 import {
   Banner,
   BannerContent,
@@ -26,14 +26,17 @@ import {
   Carousels,
   CarouselTitle,
 } from "@/components/Carousels";
+import { ModalDetailView, OnCloseItem } from "@/components/ModalDetailView";
+import { Error as ErrorComponent } from "@/components/Error";
 
-const HomeBase = styled.div``;
+const TvShowsBase = styled.div``;
 
 export function TvShows() {
   const {
     data: dataAiringToday,
     isLoading: isLoadingAiringToday,
     isSuccess: isSuccessAiringToday,
+    isError: isErrorAiringToday,
   } = useQuery({
     queryKey: ["getTvShowsAiringToday"],
     queryFn: getTvShowsAiringToday,
@@ -55,21 +58,31 @@ export function TvShows() {
   });
 
   const isSmallerEqual600px = useMedia("(max-width: 600px)");
-
   const navigate = useNavigate();
+
+  const pathMatchParam = "tvShowId";
+  const pathMatchPattern = `${BASE_PATH}/tv-shows/:${pathMatchParam}`;
   const searchParam = "list";
 
-  const onOpenMoviesItem = useCallback<OnOpenItem>(
+  const onOpenTvShow = useCallback<OnOpenItem>(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ({ carouselId, itemId, title }) => {
-      navigate(`${itemId}?${searchParam}=${carouselId}`);
+    ({ carouselId, itemId, title, image }) => {
+      navigate(`${BASE_PATH}/tv-shows/${itemId}?${searchParam}=${carouselId}`, {
+        state: {
+          image,
+        },
+      });
     },
     [navigate],
   );
 
-  // const onCloseMoviesItem = useCallback<OnCloseItem>(() => {
-  //   navigate(-1);
-  // }, [navigate]);
+  const onClickModalOverlay = useCallback<OnCloseItem>(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ({ itemId, title }) => {
+      navigate(-1);
+    },
+    [navigate],
+  );
 
   const {
     bannerMovieImageSrc,
@@ -98,33 +111,39 @@ export function TvShows() {
       dataType: "tv-show",
     });
 
-  return (
-    <HomeBase>
-      {isLoadingAiringToday && <Loader />}
-      {isSuccessAiringToday && dataAiringToday.results.length && (
-        <>
-          <Banner backgroundImageSrc={bannerMovieImageSrc}>
-            <BannerContent>
-              <BannerTitle textLength={dataAiringToday.results[0].name.length}>
-                {dataAiringToday.results[0].name}
-              </BannerTitle>
-              {!isSmallerEqual600px && (
-                <BannerOverview>
-                  {dataAiringToday.results[0].overview}
-                </BannerOverview>
-              )}
-            </BannerContent>
-          </Banner>
-          {isSmallerEqual600px && (
-            <BannerContentMobile>
+  const banner = useMemo(() => {
+    return !!dataAiringToday?.results.length ? (
+      <>
+        <Banner backgroundImageSrc={bannerMovieImageSrc}>
+          <BannerContent>
+            <BannerTitle textLength={dataAiringToday.results[0].name.length}>
+              {dataAiringToday.results[0].name}
+            </BannerTitle>
+            {!isSmallerEqual600px && (
               <BannerOverview>
                 {dataAiringToday.results[0].overview}
               </BannerOverview>
-            </BannerContentMobile>
-          )}
-        </>
-      )}
-      {/* <Carousels>
+            )}
+          </BannerContent>
+        </Banner>
+        {isSmallerEqual600px && (
+          <BannerContentMobile>
+            <BannerOverview>
+              {dataAiringToday.results[0].overview}
+            </BannerOverview>
+          </BannerContentMobile>
+        )}
+      </>
+    ) : (
+      <Banner />
+    );
+  }, [bannerMovieImageSrc, dataAiringToday?.results, isSmallerEqual600px]);
+
+  return (
+    <TvShowsBase>
+      {isErrorAiringToday && <ErrorComponent />}
+      {isLoadingAiringToday ? <Loader>{banner}</Loader> : banner}
+      <Carousels>
         {isSuccessAiringToday && dataAiringToday.results.length && (
           <CarouselContainer>
             <CarouselTitle>Airing Today</CarouselTitle>
@@ -135,11 +154,7 @@ export function TvShows() {
               id="airing-today"
               items={itemsAiringToday}
               images={imagesAiringToday}
-              pathMatchPattern={`${BASE_PATH}/tv-shows/:tvShowId`}
-              pathMatchParam="tvShowId"
-              searchParam={searchParam}
-              onOpenItem={onOpenMoviesItem}
-              onCloseItem={onCloseMoviesItem}
+              onOpenItem={onOpenTvShow}
             />
           </CarouselContainer>
         )}
@@ -153,11 +168,7 @@ export function TvShows() {
               id="on-the-air"
               items={itemsOnTheAir}
               images={imagesOnTheAir}
-              pathMatchPattern={`${BASE_PATH}/tv-shows/:tvShowId`}
-              pathMatchParam="tvShowId"
-              searchParam={searchParam}
-              onOpenItem={onOpenMoviesItem}
-              onCloseItem={onCloseMoviesItem}
+              onOpenItem={onOpenTvShow}
             />
           </CarouselContainer>
         )}
@@ -171,11 +182,7 @@ export function TvShows() {
               id="popular"
               items={itemsPopular}
               images={imagesPopular}
-              pathMatchPattern={`${BASE_PATH}/tv-shows/:tvShowId`}
-              pathMatchParam="tvShowId"
-              searchParam={searchParam}
-              onOpenItem={onOpenMoviesItem}
-              onCloseItem={onCloseMoviesItem}
+              onOpenItem={onOpenTvShow}
             />
           </CarouselContainer>
         )}
@@ -189,15 +196,18 @@ export function TvShows() {
               id="top-rated"
               items={itemsTopRated}
               images={imagesTopRated}
-              pathMatchPattern={`${BASE_PATH}/tv-shows/:tvShowId`}
-              pathMatchParam="tvShowId"
-              searchParam={searchParam}
-              onOpenItem={onOpenMoviesItem}
-              onCloseItem={onCloseMoviesItem}
+              onOpenItem={onOpenTvShow}
             />
           </CarouselContainer>
         )}
-      </Carousels> */}
-    </HomeBase>
+      </Carousels>
+      <ModalDetailView
+        type="tv-show"
+        pathMatchPattern={pathMatchPattern}
+        pathMatchParam={pathMatchParam}
+        searchParam={searchParam}
+        onClickModalOverlay={onClickModalOverlay}
+      />
+    </TvShowsBase>
   );
 }

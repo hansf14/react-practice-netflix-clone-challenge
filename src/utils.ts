@@ -1067,7 +1067,7 @@ export const preloadImage = async ({
       };
     });
   } catch (error) {
-    console.log(error);
+    console.warn(error);
     return null;
   }
 };

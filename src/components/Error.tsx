@@ -16,9 +16,16 @@ const ErrorBase = styled(Result)`
   }
 `;
 
+// const Buttons
+
 const RefreshButton = styled(Button)`
   font-weight: bold;
-  color: #333;
+  color: #000;
+`;
+
+const GoBackButton = styled(Button)`
+  font-weight: bold;
+  color: #000;
 `;
 
 type ErrorProps = {
@@ -34,6 +41,10 @@ export const Error = withMemoAndRef<"div", HTMLDivElement, ErrorProps>({
       navigate(0);
     };
 
+    const goPrevPage = () => {
+      navigate(-1);
+    };
+
     return (
       <ErrorBase
         ref={ref}
@@ -44,6 +55,9 @@ export const Error = withMemoAndRef<"div", HTMLDivElement, ErrorProps>({
           <RefreshButton key="refresh" onClick={refreshPage}>
             Refresh
           </RefreshButton>,
+          <GoBackButton key="go-back" onClick={goPrevPage}>
+            Go Back
+          </GoBackButton>,
         ]}
         {...resultProps}
         {...otherProps}

@@ -4,6 +4,7 @@ import Root from "@/Root";
 import { Home } from "@/sections/Home";
 import { Search } from "@/sections/Search";
 import { TvShows } from "@/sections/TvShows";
+import { Result } from "antd";
 
 export const router = createBrowserRouter([
   {
@@ -25,11 +26,13 @@ export const router = createBrowserRouter([
       {
         path: "movies/:movieId",
         element: <Home />,
+        errorElement: <div>Movie DOH!</div>,
       },
       {
         path: "tv-shows/:tvShowId",
         element: <TvShows />,
       },
+      // TODO: 404
     ],
   },
 ]);

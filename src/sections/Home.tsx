@@ -6,12 +6,12 @@ import { useMedia } from "react-use";
 import { Carousel, OnOpenItem } from "@/components/Carousel";
 import { ItemMovie, usePreprocessData } from "@/hooks/usePreprocessData";
 import {
+  BASE_PATH,
   getMoviesNowPlaying,
   getMoviesPopular,
   getMoviesTopRated,
   getMoviesUpcoming,
 } from "@/api";
-import { BASE_PATH } from "@/api";
 import {
   Banner,
   BannerContent,
@@ -26,9 +26,8 @@ import {
   Carousels,
   CarouselTitle,
 } from "@/components/Carousels";
-import { Error } from "@/components/Error";
+import { Error as ErrorComponent } from "@/components/Error";
 import { ModalDetailView, OnCloseItem } from "@/components/ModalDetailView";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const HomeBase = styled.div``;
 
@@ -80,8 +79,8 @@ export function Home() {
 
   const navigate = useNavigate();
 
-  const pathMatchPattern = `${BASE_PATH}/movies/:movieId`;
   const pathMatchParam = "movieId";
+  const pathMatchPattern = `${BASE_PATH}/movies/:${pathMatchParam}`;
   const searchParam = "list";
 
   const onOpenMovie = useCallback<OnOpenItem>(
@@ -157,7 +156,7 @@ export function Home() {
 
   return (
     <HomeBase>
-      {isErrorNowPlaying && <Error />}
+      {isErrorNowPlaying && <ErrorComponent />}
       {isLoadingNowPlaying ? <Loader>{banner}</Loader> : banner}
       <Carousels>
         {isSuccessNowPlaying && dataNowPlaying.results.length && (

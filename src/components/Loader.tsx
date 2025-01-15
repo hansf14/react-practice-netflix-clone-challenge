@@ -8,7 +8,7 @@ const LoaderBase = styled.div`
   display: contents;
 
   &&& .ant-spin {
-    max-height: auto;
+    max-height: unset;
   }
   &&& .ant-spin-text {
     text-shadow: none;

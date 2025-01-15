@@ -16,7 +16,9 @@ import netflixInitialLogo from "@/assets/netflix-initial-logo.png";
 
 export type ItemMovie = SmartMerge<SmartOmit<Movie, "id"> & { id: string }>;
 
-export type ItemTvShow = SmartMerge<SmartOmit<TvShow, "id"> & { id: string }>;
+export type ItemTvShow = SmartMerge<
+  SmartOmit<TvShow, "id"> & { id: string; title: string }
+>;
 
 export const usePreprocessData = <Item extends ItemMovie | ItemTvShow>({
   data,

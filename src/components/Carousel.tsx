@@ -19,21 +19,23 @@ import { useResizeObserver } from "usehooks-ts";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
 import { SmartOmit, StyledComponentProps } from "@/utils";
 import netflixInitialLogo from "@/assets/netflix-initial-logo.png";
-import { Error } from "@/components/Error";
+import { Error as ErrorComponent } from "@/components/Error";
 import { Loader } from "@/components/Loader";
 import { useLoadImage } from "@/hooks/useLoadImage";
 
 const CarouselBase = styled.div`
-  width: 100%;
   container-name: carousel-base;
   container-type: inline-size;
+
+  width: 100%;
+  clip-path: inset(-100vh 0 -100vh 0);
+  // Clip horizontal outside of the element
 
   display: flex;
   flex-direction: column;
 `;
 
 const CarouselRows = styled(motion.div)`
-  will-change: transform;
   display: flex;
   width: fit-content;
 
@@ -65,7 +67,6 @@ const CarouselRowContent = styled(motion.div).withConfig({
   shouldForwardProp: (prop) => !["itemCntPerRow"].includes(prop),
 })<CarouselRowContentProps>`
   transform-style: preserve-3d;
-  will-change: transform;
   width: 100%;
 
   display: grid;
@@ -83,17 +84,16 @@ const CarouselRowContent = styled(motion.div).withConfig({
 
 const CarouselItemBox = styled(motion.div)`
   transform-style: preserve-3d;
-  will-change: transform;
   position: relative;
   width: 100%;
 
-  transform-origin: center bottom;
-  &:first-child {
-    transform-origin: left bottom;
-  }
-  &:last-child {
-    transform-origin: right bottom;
-  }
+  // transform-origin: center bottom;
+  // &:first-child {
+  //   transform-origin: left bottom;
+  // }
+  // &:last-of-type {
+  //   transform-origin: right bottom;
+  // }
 
   cursor: pointer;
 `;
@@ -107,6 +107,9 @@ export const cssItemPosterImage = css`
 `;
 
 const CarouselItemPoster = styled.div`
+  container-name: carousel-item-poster;
+  container-type: size;
+
   transform: translateZ(5px);
   aspect-ratio: 2 / 3; // Prevent subpixel problem by setting the aspect ratio to the image intrinsic dimension.
 
@@ -116,9 +119,6 @@ const CarouselItemPoster = styled.div`
   img {
     ${cssItemPosterImage}
   }
-
-  container-name: carousel-item-poster;
-  container-type: size;
 `;
 
 const CarouselItemPosterLoadIndicatorPlaceholder = styled.div`
@@ -127,12 +127,11 @@ const CarouselItemPosterLoadIndicatorPlaceholder = styled.div`
 `;
 
 const CarouselItemTooltipOverflowParentGuard = styled.div`
-  clip-path: inset(0px 0px -100vh 0px);
+  clip-path: inset(0 0 -100vh 0);
 `;
 
 const CarouselItemTooltip = styled(motion.div)`
   transform: translateZ(3px);
-  will-change: transform;
   position: absolute;
   bottom: 0;
   width: 100%;
@@ -190,11 +189,12 @@ const CarouselControllerNumber = styled.div.withConfig({
   shouldForwardProp: (prop) => !["isActive"].includes(prop),
 })<CarouselControllerNumberProps>`
   font-size: 25px;
+  font-weight: bold;
+
   ${({ isActive }) =>
     isActive
       ? `
-      color: #ffd700; // #1677ff;
-      font-weight: bold;
+      color: #ffd700;
     `
       : "cursor: pointer;"}
 `;
@@ -205,20 +205,29 @@ const rowContentVariants: Variants = {
 
 const itemBoxVariants: Variants = {
   initial: {
-    scale: 1,
+    // scale: 1,
   },
   hover: {
-    scale: 1.3,
-    z: 10,
-    // zIndex: 10,
+    // scale: 1.3,
     y: -10,
+    z: 10,
     transition: {
       ease: "linear",
-      delay: 0.5,
+      // delay: 0.5,
       duration: 0.3,
     },
   },
 };
+// scale: 1 -> 1.3
+// transform-origin: center bottom;
+// &:first-child {
+//   transform-origin: left bottom;
+// }
+// &:last-of-type {
+//   transform-origin: right bottom;
+// }
+// ㄴ Framer Motion bug [1]: only applying scale to scaleY
+// ㄴ Framer Motion bug [2]: transform-origin gets left undeleted after shared layout animation
 
 const itemTooltipVariants: Variants = {
   hover: {
@@ -592,6 +601,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                             ref={(el) => {
                               refCarouselItemBoxes.current[itemIndex] = el;
                             }}
+                            layout
                             layoutId={id + item.id}
                             variants={itemBoxVariants}
                             initial="initial"
@@ -606,10 +616,29 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                               index,
                             })}
                             // ㄴ onLayoutAnimationStart는 fromModal (다시 되돌아오는 방향)에서만 발생해서 `onLayoutAnimationStart` 보다 `onTapStart`가 더 잘 맞는다.
+                            // style={{
+                            //   originX: 0,
+                            //   originY: 1,
+                            //   scaleX: 1,
+                            //   scaleY: 1,
+                            // }}
+                            // onLayoutAnimationComplete={() => {
+                            //   setTimeout(() => {
+                            //     if (!refCarouselItemBoxes.current[itemIndex]) {
+                            //       return;
+                            //     }
+                            //     console.log(
+                            //       refCarouselItemBoxes.current[itemIndex],
+                            //     );
+                            //     refCarouselItemBoxes.current[
+                            //       itemIndex
+                            //     ].style.transformOrigin = "";
+                            //   }, 1);
+                            // }}
                           >
                             <CarouselItemPoster>
                               {imageComponentObjs[itemIndex].status ===
-                                "error" && <Error />}
+                                "error" && <ErrorComponent />}
                               {imageComponentObjs[itemIndex].status ===
                                 "pending" && (
                                 <Loader>
@@ -629,10 +658,8 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                             </CarouselItemPoster>
                             <CarouselItemTooltipOverflowParentGuard>
                               <CarouselItemTooltip
+                                // custom
                                 variants={itemTooltipVariants}
-                                transition={{
-                                  type: "tween",
-                                }}
                               >
                                 <CarouselItemTooltipTitle>
                                   {item.title}

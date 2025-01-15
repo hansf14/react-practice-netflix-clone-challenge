@@ -234,7 +234,7 @@ export interface MovieDetails {
   belongs_to_collection: Collection | null;
   budget: number;
   genres: Genre[];
-  homepage: string;
+  homepage: string | null;
   id: number;
   imdb_id: string;
   origin_country: string[];
@@ -248,7 +248,7 @@ export interface MovieDetails {
   release_date: string;
   revenue: number;
   runtime: number;
-  spoken_languages: SpokenLanguage[];
+  spoken_languages: Language[];
   status: string;
   tagline: string;
   title: string;
@@ -273,7 +273,7 @@ export interface ProductionCompany {
   id: number;
   logo_path: string | null;
   name: string;
-  origin_country: string;
+  origin_country: string | null;
 }
 
 export interface ProductionCountry {
@@ -281,7 +281,7 @@ export interface ProductionCountry {
   name: string;
 }
 
-export interface SpokenLanguage {
+export interface Language {
   english_name: string;
   iso_639_1: string;
   name: string;
@@ -291,11 +291,22 @@ export type GetMovieDetailsParams = { movieId: string };
 
 // https://developer.themoviedb.org/reference/movie-details
 export async function getMovieDetails({ movieId }: GetMovieDetailsParams) {
-  const response = await fetch(
-    `${API_BASE_URL}/movie/${movieId}?language=en-US`,
-    fetchOptions,
-  );
-  return response.json() as unknown as MovieDetails;
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/movie/${movieId}?language=en-US`,
+      fetchOptions,
+    );
+    console.log(response);
+    if (!response.ok) {
+      throw new Error(
+        `Error: ${response.status} ${response.statusText} (movieId: ${movieId})`,
+      );
+    }
+    return response.json() as unknown as MovieDetails;
+  } catch (error) {
+    console.warn(error);
+    return null;
+  }
 }
 
 export interface GetMoviesSimilarResult {
@@ -305,13 +316,26 @@ export interface GetMoviesSimilarResult {
   total_results: number;
 }
 
+export interface GetMoviesSimilarParams extends GetMovieDetailsParams {}
+
 // https://developer.themoviedb.org/reference/movie-similar
-export async function getMoviesSimilar({ movieId }: GetMovieDetailsParams) {
-  const response = await fetch(
-    `${API_BASE_URL}/movie/${movieId}/similar?language=en-US&page=1`,
-    fetchOptions,
-  );
-  return response.json() as unknown as GetMoviesSimilarResult;
+export async function getMoviesSimilar({ movieId }: GetMoviesSimilarParams) {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/movie/${movieId}/similar?language=en-US&page=1`,
+      fetchOptions,
+    );
+    console.log(response);
+    if (!response.ok) {
+      throw new Error(
+        `Error: ${response.status} ${response.statusText} (movieId: ${movieId})`,
+      );
+    }
+    return response.json() as unknown as GetMoviesSimilarResult;
+  } catch (error) {
+    console.warn(error);
+    return null;
+  }
 }
 
 export interface GetMoviesRecommendedResult {
@@ -321,13 +345,28 @@ export interface GetMoviesRecommendedResult {
   total_results: number;
 }
 
+export interface GetMoviesRecommendedParams extends GetMovieDetailsParams {}
+
 // https://developer.themoviedb.org/reference/movie-recommendations
-export async function getMoviesRecommended({ movieId }: GetMovieDetailsParams) {
-  const response = await fetch(
-    `${API_BASE_URL}/movie/${movieId}/recommendations?language=en-US&page=1`,
-    fetchOptions,
-  );
-  return response.json() as unknown as GetMoviesRecommendedResult;
+export async function getMoviesRecommended({
+  movieId,
+}: GetMoviesRecommendedParams) {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/movie/${movieId}/recommendations?language=en-US&page=1`,
+      fetchOptions,
+    );
+    console.log(response);
+    if (!response.ok) {
+      throw new Error(
+        `Error: ${response.status} ${response.statusText} (movieId: ${movieId})`,
+      );
+    }
+    return response.json() as unknown as GetMoviesRecommendedResult;
+  } catch (error) {
+    console.warn(error);
+    return null;
+  }
 }
 
 //////////////////////////////////////////
@@ -433,4 +472,164 @@ export async function getTvShowsTopRated() {
     fetchOptions,
   );
   return response.json() as unknown as GetTvShowsTopRatedResult;
+}
+
+export interface TvShowDetails {
+  adult: boolean;
+  backdrop_path: string | null;
+  created_by: CreatedBy[];
+  episode_run_time: number[];
+  first_air_date: string;
+  genres: Genre[];
+  homepage: string;
+  id: number;
+  in_production: boolean;
+  languages: Language[];
+  last_air_date: string;
+  last_episode_to_air: EpisodeToAir | null;
+  name: string;
+  next_episode_to_air: EpisodeToAir | null;
+  networks: Network[];
+  number_of_episodes: number;
+  number_of_seasons: number;
+  origin_country: string[];
+  original_language: string;
+  original_name: string;
+  overview: string;
+  popularity: number;
+  poster_path: string | null;
+  production_companies: ProductionCompany[];
+  production_countries: ProductionCountry[];
+  seasons: Season[];
+  spoken_languages: Language[];
+  status: string;
+  tagline: string;
+  type: string;
+  vote_average: number;
+  vote_count: number;
+}
+
+export interface CreatedBy {
+  id: number;
+  credit_id: string;
+  name: string;
+  original_name: string;
+  gender: number;
+  profile_path: string | null;
+}
+
+export interface EpisodeToAir {
+  id: number;
+  name: string;
+  overview: string;
+  vote_average: number;
+  vote_count: number;
+  air_date: string;
+  episode_number: number;
+  episode_type: string;
+  production_code: string;
+  runtime: number;
+  season_number: number;
+  show_id: number;
+  still_path: string | null;
+}
+
+export interface Network {
+  id: number;
+  logo_path: string;
+  name: string;
+  origin_country: string;
+}
+
+export interface Season {
+  air_date: string;
+  episode_count: number;
+  id: number;
+  name: string;
+  overview: string;
+  poster_path: string | null;
+  season_number: number;
+  vote_average: number;
+}
+
+export type GetTvShowDetailsParams = { tvShowId: string };
+
+// https://developer.themoviedb.org/reference/tv-series-details
+export async function getTvShowDetails({ tvShowId }: GetTvShowDetailsParams) {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/tv/${tvShowId}?language=en-US`,
+      fetchOptions,
+    );
+    console.log(response);
+    if (!response.ok) {
+      throw new Error(
+        `Error: ${response.status} ${response.statusText} (tvShowId: ${tvShowId})`,
+      );
+    }
+    return response.json() as unknown as TvShowDetails;
+  } catch (error) {
+    console.warn(error);
+    return null;
+  }
+}
+
+export interface GetTvShowsSimilarResult {
+  page: number;
+  total_pages: number;
+  results: Movie[];
+  total_results: number;
+}
+
+export interface GetTvShowsSimilarParams extends GetTvShowDetailsParams {}
+
+// https://developer.themoviedb.org/reference/tv-series-similar
+export async function getTvShowsSimilar({ tvShowId }: GetTvShowsSimilarParams) {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/tv/${tvShowId}/similar?language=en-US&page=1`,
+      fetchOptions,
+    );
+    console.log(response);
+    if (!response.ok) {
+      throw new Error(
+        `Error: ${response.status} ${response.statusText} (tvShowId: ${tvShowId})`,
+      );
+    }
+    return response.json() as unknown as GetTvShowsSimilarResult;
+  } catch (error) {
+    console.warn(error);
+    return null;
+  }
+}
+
+export interface GetTvShowsRecommendedResult {
+  page: number;
+  total_pages: number;
+  results: Movie[];
+  total_results: number;
+}
+
+export interface GetTvShowsRecommendedParams extends GetTvShowDetailsParams {}
+
+// https://developer.themoviedb.org/reference/tv-series-recommendations
+export async function getTvShowsRecommended({
+  tvShowId,
+}: GetTvShowsRecommendedParams) {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/tv/${tvShowId}/recommendations?language=en-US&page=1`,
+      fetchOptions,
+    );
+    console.log(response);
+    if (!response.ok) {
+      throw new Error(
+        `Error: ${response.status} ${response.statusText} (tvShowId: ${tvShowId})`,
+      );
+    }
+    return response.json() as unknown as GetTvShowsRecommendedResult;
+  } catch (error) {
+    console.warn(error);
+    return null;
+  }
 }

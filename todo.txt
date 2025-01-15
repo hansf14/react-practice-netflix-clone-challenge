@@ -10,4 +10,4 @@
 해결: 1페이지가 아닌 페이지에서 resize시에 carousel 위치가 살짝 어긋나는 문제
 해결: 1페이지가 아닌 페이지에서 resize시에 jittering
 해결: ModalDetailView에서 스크롤 갑자기 내리면 생기는 에러
-ModalDetailView에서 Carousel 바깥쪽 보이는 문제
+해결: ModalDetailView에서 Carousel 바깥쪽 보이는 문제
