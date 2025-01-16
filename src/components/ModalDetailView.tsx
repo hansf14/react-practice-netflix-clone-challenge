@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { css, styled } from "styled-components";
-import { useLocation, useMatch, useNavigate } from "react-router-dom";
+import { useLocation, useMatch } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { withMemoAndRef } from "@/hocs/withMemoAndRef";
 import {
@@ -11,7 +11,6 @@ import {
 } from "@/components/Carousel";
 import { StyledComponentProps } from "@/utils";
 import {
-  BASE_PATH,
   getImageUrl,
   getMovieDetails,
   getMoviesRecommended,
@@ -36,9 +35,10 @@ import {
 import { Error as ErrorComponent } from "@/components/Error";
 import { Loader } from "@/components/Loader";
 import { Error404 } from "@/components/Error404";
+import { useDeviceDetector } from "@/hooks/useDeviceDetector";
 
 const ModalOverlay = styled(motion.div)`
-  z-index: 900;
+  z-index: 2000;
   position: fixed;
   top: 0;
   width: 100%;
@@ -48,38 +48,54 @@ const ModalOverlay = styled(motion.div)`
   opacity: 0;
 `;
 
-const ModalContainer = styled(motion.div)`
-  z-index: 1000;
+type ModalContainerProps = {
+  isTouchDevice?: boolean;
+};
+
+const ModalContainer = styled(motion.div).withConfig({
+  shouldForwardProp: (prop) => !["isTouchDevice"].includes(prop),
+})<ModalContainerProps>`
+  z-index: 3000;
   position: fixed;
 
-  width: 900px;
-  height: 80vh;
+  ${({ isTouchDevice = false, theme }) =>
+    isTouchDevice
+      ? css`
+          width: 100%;
+          height: calc(
+            100lvh - ${({ theme }) => `${theme.headerNavBarHeight}px`}
+          );
 
-  // top: 0;
-  top: ${({ theme }) => `calc(10px + ${theme.headerNavBarHeight}px)`};
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin: 0 auto;
+          top: ${theme.headerNavBarHeight}px;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          margin: 0 auto;
+        `
+      : css`
+          width: 900px;
+          height: calc(
+            100lvh - ${({ theme }) => `${2 * theme.headerNavBarHeight}px`} -
+              10px
+          );
 
-  border-radius: 10px;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          margin: auto;
+
+          border-radius: 10px;
+          border: 1px solid #fff;
+          box-shadow: 0 8px 32px 0 rgba(255, 255, 255, 0.37);
+
+          @media (max-width: 1000px) {
+            width: calc(100% - 20px);
+          }
+        `}
+
   background-color: #010101;
-  border: 1px solid #fff;
-  box-shadow: 0 8px 32px 0 rgba(255, 255, 255, 0.37);
   padding: 10px;
-
-  @media (max-width: 1000px) {
-    width: calc(100% - 20px);
-  }
-
-  @media (max-height: 800px) {
-    width: 100%;
-    top: ${({ theme }) => `${theme.headerNavBarHeight}px`};
-    height: calc(100lvh - ${({ theme }) => `${theme.headerNavBarHeight}px`});
-    border-radius: unset;
-    border: none;
-    box-shadow: unset;
-  }
 `;
 
 const Modal = styled.div`
@@ -93,17 +109,22 @@ const Modal = styled.div`
   flex-direction: column;
 `;
 
-const ModalContent = styled.div`
+const ModalContentSingle = styled.div`
   container-name: modal-content;
   container-type: size;
 
   flex-grow: 1;
   display: grid;
   place-items: center;
-  // display: flex;
-  // flex-direction: column;
-  // align-items: center;
-  // justify-content: center;
+`;
+
+const ModalContentMultiple = styled.div`
+  container-name: modal-content;
+  container-type: size;
+
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 `;
 
 const ModalContentLoadIndicatorPlaceholder = styled.div`
@@ -113,17 +134,15 @@ const ModalContentLoadIndicatorPlaceholder = styled.div`
 
 const ItemPoster = styled.div`
   container-name: item-poster;
-  container-type: size;
+  container-type: inline-size;
 
   aspect-ratio: 2 / 3;
   max-width: 40cqw;
   width: 100%;
+  margin: 0 auto;
 
   display: flex;
   justify-content: center;
-
-  // border: 1px solid #fff;
-  // border-radius: 10px;
 
   img {
     ${cssItemPosterImage}
@@ -133,7 +152,7 @@ const ItemPoster = styled.div`
 
 const ItemPosterLoadIndicatorPlaceholder = styled.div`
   width: 100cqw;
-  height: 100cqh;
+  height: 100%;
 `;
 
 const ItemTitle = styled.h2`
@@ -145,7 +164,7 @@ const ItemTitle = styled.h2`
 `;
 
 const ItemDivider = styled.hr`
-  width: 100%;
+  width: calc(100% - 20px);
   margin-bottom: 20px;
 `;
 
@@ -251,17 +270,18 @@ const Padding = styled.div`
 `;
 
 export type OnCloseItemParams = {
-  itemId: string;
-  title: string;
+  itemId: string | null;
+  title: string | null;
 };
 
-export type OnCloseItem = ({ itemId, title }: OnCloseItemParams) => void;
+export type OnCloseItem = () => void;
 
 export type ModalDetailViewProps = {
   type: "movie" | "tv-show";
   pathMatchPattern: string;
   pathMatchParam: string;
   searchParam: string;
+  onOpenItem?: OnOpenItem;
   onClickModalOverlay?: OnCloseItem;
 } & StyledComponentProps<"div">;
 
@@ -277,10 +297,14 @@ export const ModalDetailView = withMemoAndRef<
       pathMatchPattern,
       pathMatchParam,
       searchParam: _searchParam,
+      onOpenItem: _onOpenItem,
       onClickModalOverlay: _onClickModalOverlay,
     },
     ref,
   ) => {
+    const { getDeviceDetector } = useDeviceDetector();
+    const { getIsTouchDevice } = getDeviceDetector();
+
     const pathMatch = useMatch(pathMatchPattern);
     const location = useLocation();
     // console.log(location);
@@ -451,26 +475,21 @@ export const ModalDetailView = withMemoAndRef<
         dataType: "tv-show",
       });
 
-    const navigate = useNavigate();
-
-    const onOpenMovie = useCallback<OnOpenItem>(
+    const onOpenItem = useCallback<OnOpenItem>(
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       ({ carouselId, itemId, title, image }) => {
         // console.log(image);
 
-        navigate(`${BASE_PATH}/movies/${itemId}?${searchParam}=${carouselId}`, {
-          state: {
-            image,
-          },
-        });
+        _onOpenItem?.({ carouselId, itemId, title, image });
       },
-      [navigate, searchParam],
+      [_onOpenItem],
     );
 
     const onClickModalOverlay = useCallback(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       ({ itemId, title }: OnCloseItemParams) =>
         () => {
-          _onClickModalOverlay?.({ itemId, title });
+          _onClickModalOverlay?.();
         },
       [_onClickModalOverlay],
     );
@@ -496,17 +515,30 @@ export const ModalDetailView = withMemoAndRef<
           })
         : netflixInitialLogo;
 
+    const itemId = pathMatch?.params[pathMatchParam] ?? null;
+    const title = !!movieDetailData
+      ? movieDetailData.title
+      : !!tvShowDetailData
+        ? tvShowDetailData.name
+        : null;
+
+    console.log("pathMatch:", pathMatch);
+    console.log(
+      !!searchParam
+        ? searchParam + (pathMatch?.params[pathMatchParam] ?? "")
+        : (pathMatch?.params[pathMatchParam] ?? ""),
+    );
+
     return (
-      <AnimatePresence>
-        {pathMatch && (
+      <AnimatePresence presenceAffectsLayout={true}>
+        {!!pathMatch && (
           <>
             <ModalOverlay
+              key="modal-overlay"
+              // When adding/removing more than a single child, every child must be given a unique key prop.
               onClick={onClickModalOverlay({
-                itemId: "123",
-                title: "123",
-                // carouselId: id,
-                // itemId: selectedItem.id.toString(),
-                // title: selectedItem.title,
+                itemId,
+                title,
               })}
               animate={{
                 opacity: 1,
@@ -516,645 +548,645 @@ export const ModalDetailView = withMemoAndRef<
               }}
             />
             <ModalContainer
+              key="modal-container"
               ref={ref}
               layoutId={
                 !!searchParam
                   ? searchParam + (pathMatch.params[pathMatchParam] ?? "")
                   : (pathMatch.params[pathMatchParam] ?? "")
               }
+              isTouchDevice={getIsTouchDevice()}
             >
               <Modal>
-                <ModalContent>
-                  {(movieDetailStatus === "error" ||
-                    tvShowDetailStatus === "error") && <Error404 />}
-                  {(movieDetailStatus === "pending" ||
-                    tvShowDetailStatus === "pending") && (
+                {(movieDetailStatus === "error" ||
+                  tvShowDetailStatus === "error") && (
+                  <ModalContentSingle>
+                    <Error404 />
+                  </ModalContentSingle>
+                )}
+                {(movieDetailStatus === "pending" ||
+                  tvShowDetailStatus === "pending") && (
+                  <ModalContentSingle>
                     <Loader>
                       <ModalContentLoadIndicatorPlaceholder />
                     </Loader>
-                  )}
-                  {movieDetailStatus === "success" && (
-                    <>
-                      <ItemPoster>
-                        {imageMainPosterStatus === "error" && (
-                          <ErrorComponent />
-                        )}
-                        {imageMainPosterStatus === "pending" && (
-                          <Loader>
-                            <ItemPosterLoadIndicatorPlaceholder />
-                          </Loader>
-                        )}
-                        {imageMainPosterStatus === "success" && imageMainPoster}
-                      </ItemPoster>
-                      {movieDetailData && (
-                        <>
-                          <ItemTitle>{movieDetailData.title}</ItemTitle>
+                  </ModalContentSingle>
+                )}
+                {movieDetailStatus === "success" && (
+                  <ModalContentMultiple>
+                    <ItemPoster>
+                      {imageMainPosterStatus === "error" && <ErrorComponent />}
+                      {imageMainPosterStatus === "pending" && (
+                        <Loader>
+                          <ItemPosterLoadIndicatorPlaceholder />
+                        </Loader>
+                      )}
+                      {imageMainPosterStatus === "success" && imageMainPoster}
+                    </ItemPoster>
+                    {movieDetailData && (
+                      <>
+                        <ItemTitle>{movieDetailData.title}</ItemTitle>
 
-                          <ItemDivider />
+                        <ItemDivider />
 
-                          <ItemContent>
-                            <ItemField>
-                              <ItemLabel>Original Title</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {movieDetailData.original_title}
-                              </ItemLabelContent>
-                            </ItemField>
+                        <ItemContent>
+                          <ItemField>
+                            <ItemLabel>Original Title</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.original_title}
+                            </ItemLabelContent>
+                          </ItemField>
 
-                            <ItemField>
-                              <ItemLabel>Status</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {movieDetailData.status}
-                              </ItemLabelContent>
-                            </ItemField>
+                          <ItemField>
+                            <ItemLabel>Status</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.status}
+                            </ItemLabelContent>
+                          </ItemField>
 
-                            <ItemField>
-                              <ItemLabel>Release Date</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {movieDetailData.release_date}
-                              </ItemLabelContent>
-                            </ItemField>
+                          <ItemField>
+                            <ItemLabel>Release Date</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.release_date}
+                            </ItemLabelContent>
+                          </ItemField>
 
-                            <ItemField>
-                              <ItemLabel>Genres</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {movieDetailData.genres.map(
-                                  (genre, index, genres) => {
-                                    return (
-                                      <span key={index}>
-                                        {genre.name}
-                                        {index !== genres.length - 1 && ", "}
-                                      </span>
-                                    );
-                                  },
-                                )}
-                              </ItemLabelContent>
-                            </ItemField>
+                          <ItemField>
+                            <ItemLabel>Genres</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.genres.map(
+                                (genre, index, genres) => {
+                                  return (
+                                    <span key={index}>
+                                      {genre.name}
+                                      {index !== genres.length - 1 && ", "}
+                                    </span>
+                                  );
+                                },
+                              )}
+                            </ItemLabelContent>
+                          </ItemField>
 
-                            <ItemField>
-                              <ItemLabel>Runtime</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {movieDetailData.runtime}
-                              </ItemLabelContent>
-                            </ItemField>
+                          <ItemField>
+                            <ItemLabel>Runtime</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.runtime}
+                            </ItemLabelContent>
+                          </ItemField>
 
-                            <ItemField>
-                              <ItemLabel>Popularity</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {movieDetailData.popularity}
-                              </ItemLabelContent>
-                            </ItemField>
-                            <ItemField>
-                              <ItemLabel>Vote Average</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {movieDetailData.vote_average}
-                              </ItemLabelContent>
-                            </ItemField>
-                            <ItemField>
-                              <ItemLabel>Vote Count</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {movieDetailData.vote_count}
-                              </ItemLabelContent>
-                            </ItemField>
+                          <ItemField>
+                            <ItemLabel>Popularity</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.popularity}
+                            </ItemLabelContent>
+                          </ItemField>
+                          <ItemField>
+                            <ItemLabel>Vote Average</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.vote_average}
+                            </ItemLabelContent>
+                          </ItemField>
+                          <ItemField>
+                            <ItemLabel>Vote Count</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.vote_count}
+                            </ItemLabelContent>
+                          </ItemField>
 
-                            <ItemField>
-                              <ItemLabel>Budget</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {movieDetailData.budget === 0
-                                  ? "Unknown"
-                                  : movieDetailData.budget.toLocaleString(
-                                      "en-US",
-                                    )}{" "}
-                                USD
-                              </ItemLabelContent>
-                            </ItemField>
-                            <ItemField>
-                              <ItemLabel>Revenue</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {movieDetailData.revenue === 0
-                                  ? "Unknown"
-                                  : movieDetailData.revenue.toLocaleString(
-                                      "en-US",
-                                    )}
-                              </ItemLabelContent>
+                          <ItemField>
+                            <ItemLabel>Budget</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.budget === 0
+                                ? "Unknown"
+                                : movieDetailData.budget.toLocaleString(
+                                    "en-US",
+                                  )}{" "}
                               USD
-                            </ItemField>
+                            </ItemLabelContent>
+                          </ItemField>
+                          <ItemField>
+                            <ItemLabel>Revenue</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.revenue === 0
+                                ? "Unknown"
+                                : movieDetailData.revenue.toLocaleString(
+                                    "en-US",
+                                  )}
+                            </ItemLabelContent>
+                            USD
+                          </ItemField>
 
-                            <ItemField>
-                              <ItemLabel>Spoken Languages</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {movieDetailData.spoken_languages.length === 0
-                                  ? "Unknown"
-                                  : movieDetailData.spoken_languages.map(
-                                      (language, index, languages) => {
-                                        return (
-                                          <React.Fragment key={index}>
-                                            <span>{language.english_name}</span>{" "}
-                                            {language.name &&
-                                              language.name !== "English" && (
-                                                <span>
-                                                  &lt;{language.name}
-                                                  &gt;
-                                                </span>
-                                              )}
-                                            {index !== languages.length - 1 &&
-                                              ", "}
-                                          </React.Fragment>
-                                        );
-                                      },
-                                    )}
-                              </ItemLabelContent>
-                            </ItemField>
-
-                            {!!movieDetailData.tagline && (
-                              <ItemField>
-                                <ItemLabel>Tagline</ItemLabel>
-                                {": "}
-                                <ItemLabelContent>
-                                  {movieDetailData.tagline}
-                                </ItemLabelContent>
-                              </ItemField>
-                            )}
-
-                            {!!movieDetailData.overview && (
-                              <ItemField>
-                                <ItemLabel>Overview</ItemLabel>
-                                {": "}
-                                <ItemLabelContent>
-                                  {movieDetailData.overview}
-                                </ItemLabelContent>
-                              </ItemField>
-                            )}
-
-                            {!!movieDetailData.homepage && (
-                              <ItemField>
-                                <ItemLabel>Homepage</ItemLabel>
-                                {": "}
-                                <ItemLabelContent>
-                                  <a
-                                    href={movieDetailData.homepage}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    {movieDetailData.homepage.replace(
-                                      /^https?:\/\//,
-                                      "",
-                                    )}
-                                  </a>
-                                </ItemLabelContent>
-                              </ItemField>
-                            )}
-
-                            <ItemField>
-                              <ItemLabel>Production Countries</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {movieDetailData.production_countries.length ===
-                                0
-                                  ? "Unknown"
-                                  : movieDetailData.production_countries.map(
-                                      (country, index, countries) => {
-                                        return (
-                                          <React.Fragment key={index}>
-                                            <span>{country.name}</span>
-                                            {index !== countries.length - 1 &&
-                                              ", "}
-                                          </React.Fragment>
-                                        );
-                                      },
-                                    )}
-                              </ItemLabelContent>
-                            </ItemField>
-
-                            {movieDetailData.production_companies.length ===
-                            0 ? (
-                              <ItemField>
-                                <ItemLabel>Production Companies</ItemLabel>
-                                {": "}
-                                <ItemLabelContent>Unknown</ItemLabelContent>
-                              </ItemField>
-                            ) : (
-                              <ItemFieldFlex>
-                                <ItemLabel>Production Companies</ItemLabel>
-                                <ItemLabelContentGrid>
-                                  {movieDetailData.production_companies.map(
-                                    (company, index) => {
+                          <ItemField>
+                            <ItemLabel>Spoken Languages</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.spoken_languages.length === 0
+                                ? "Unknown"
+                                : movieDetailData.spoken_languages.map(
+                                    (language, index, languages) => {
                                       return (
-                                        <div key={index}>
-                                          {company.logo_path && (
-                                            <ItemContentImage
-                                              src={getImageUrl({
-                                                pathSegment: company.logo_path,
-                                                format: "w500",
-                                              })}
-                                            />
-                                          )}
-                                          <span>{company.name}</span>{" "}
-                                          {!!company.origin_country && (
-                                            <span>
-                                              &lt;{company.origin_country}
-                                              &gt;
-                                            </span>
-                                          )}
-                                        </div>
+                                        <React.Fragment key={index}>
+                                          <span>{language.english_name}</span>{" "}
+                                          {language.name &&
+                                            language.name !== "English" && (
+                                              <span>
+                                                &lt;{language.name}
+                                                &gt;
+                                              </span>
+                                            )}
+                                          {index !== languages.length - 1 &&
+                                            ", "}
+                                        </React.Fragment>
                                       );
                                     },
                                   )}
-                                </ItemLabelContentGrid>
-                              </ItemFieldFlex>
-                            )}
+                            </ItemLabelContent>
+                          </ItemField>
 
-                            {movieDetailData.belongs_to_collection && (
-                              <ItemFieldFlex>
-                                <ItemLabel>Collection</ItemLabel>
-                                <ItemLabelContentFlex>
-                                  <ItemContentImage src={collectionImageSrc} />
-                                  <span style={{ marginTop: 10 }}>
-                                    {movieDetailData.belongs_to_collection.name}
-                                  </span>
-                                </ItemLabelContentFlex>
-                              </ItemFieldFlex>
-                            )}
+                          {!!movieDetailData.tagline && (
+                            <ItemField>
+                              <ItemLabel>Tagline</ItemLabel>
+                              {": "}
+                              <ItemLabelContent>
+                                {movieDetailData.tagline}
+                              </ItemLabelContent>
+                            </ItemField>
+                          )}
 
+                          {!!movieDetailData.overview && (
+                            <ItemField>
+                              <ItemLabel>Overview</ItemLabel>
+                              {": "}
+                              <ItemLabelContent>
+                                {movieDetailData.overview}
+                              </ItemLabelContent>
+                            </ItemField>
+                          )}
+
+                          {!!movieDetailData.homepage && (
+                            <ItemField>
+                              <ItemLabel>Homepage</ItemLabel>
+                              {": "}
+                              <ItemLabelContent>
+                                <a
+                                  href={movieDetailData.homepage}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {movieDetailData.homepage.replace(
+                                    /^https?:\/\//,
+                                    "",
+                                  )}
+                                </a>
+                              </ItemLabelContent>
+                            </ItemField>
+                          )}
+
+                          <ItemField>
+                            <ItemLabel>Production Countries</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {movieDetailData.production_countries.length === 0
+                                ? "Unknown"
+                                : movieDetailData.production_countries.map(
+                                    (country, index, countries) => {
+                                      return (
+                                        <React.Fragment key={index}>
+                                          <span>{country.name}</span>
+                                          {index !== countries.length - 1 &&
+                                            ", "}
+                                        </React.Fragment>
+                                      );
+                                    },
+                                  )}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          {movieDetailData.production_companies.length === 0 ? (
+                            <ItemField>
+                              <ItemLabel>Production Companies</ItemLabel>
+                              {": "}
+                              <ItemLabelContent>Unknown</ItemLabelContent>
+                            </ItemField>
+                          ) : (
                             <ItemFieldFlex>
-                              <ItemLabel>Similar</ItemLabel>
-                              <ItemLabelContentFlex>
-                                <Carousel
-                                  id="similar"
-                                  items={itemsMoviesSimilar}
-                                  images={imagesMoviesSimilar}
-                                  onOpenItem={onOpenMovie}
-                                />
-                              </ItemLabelContentFlex>
-                            </ItemFieldFlex>
-
-                            <ItemFieldFlex>
-                              <ItemLabel>Recommended</ItemLabel>
-                              <ItemLabelContentFlex>
-                                <Carousel
-                                  id="recommended"
-                                  items={itemsMoviesRecommended}
-                                  images={imagesMoviesRecommended}
-                                  onOpenItem={onOpenMovie}
-                                />
-                              </ItemLabelContentFlex>
-                            </ItemFieldFlex>
-
-                            <Padding />
-                          </ItemContent>
-                        </>
-                      )}
-                    </>
-                  )}
-                  {tvShowDetailStatus === "success" && (
-                    <>
-                      <ItemPoster>
-                        {imageMainPosterStatus === "error" && (
-                          <ErrorComponent />
-                        )}
-                        {imageMainPosterStatus === "pending" && (
-                          <Loader>
-                            <ItemPosterLoadIndicatorPlaceholder />
-                          </Loader>
-                        )}
-                        {imageMainPosterStatus === "success" && imageMainPoster}
-                      </ItemPoster>
-                      {tvShowDetailData && (
-                        <>
-                          <ItemTitle>{tvShowDetailData.name}</ItemTitle>
-
-                          <ItemDivider />
-
-                          <ItemContent>
-                            <ItemField>
-                              <ItemLabel>Original Title</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {tvShowDetailData.original_name}
-                              </ItemLabelContent>
-                            </ItemField>
-
-                            <ItemField>
-                              <ItemLabel>Status</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {tvShowDetailData.status}
-                              </ItemLabelContent>
-                            </ItemField>
-
-                            <ItemField>
-                              <ItemLabel>In Production</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {tvShowDetailData.in_production ? "Yes" : "No"}
-                              </ItemLabelContent>
-                            </ItemField>
-
-                            {!!tvShowDetailData.type && (
-                              <ItemField>
-                                <ItemLabel>Type</ItemLabel>
-                                {": "}
-                                <ItemLabelContent>
-                                  {tvShowDetailData.type}
-                                </ItemLabelContent>
-                              </ItemField>
-                            )}
-
-                            <ItemField>
-                              <ItemLabel>Created By</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {tvShowDetailData.created_by.map(
-                                  (creator, index, genres) => {
+                              <ItemLabel>Production Companies</ItemLabel>
+                              <ItemLabelContentGrid>
+                                {movieDetailData.production_companies.map(
+                                  (company, index) => {
                                     return (
-                                      <span key={index}>
-                                        {creator.name}
-                                        {index !== genres.length - 1 && ", "}
-                                      </span>
+                                      <div key={index}>
+                                        {company.logo_path && (
+                                          <ItemContentImage
+                                            src={getImageUrl({
+                                              pathSegment: company.logo_path,
+                                              format: "w500",
+                                            })}
+                                          />
+                                        )}
+                                        <span>{company.name}</span>{" "}
+                                        {!!company.origin_country && (
+                                          <span>
+                                            &lt;{company.origin_country}
+                                            &gt;
+                                          </span>
+                                        )}
+                                      </div>
                                     );
                                   },
                                 )}
-                              </ItemLabelContent>
-                            </ItemField>
+                              </ItemLabelContentGrid>
+                            </ItemFieldFlex>
+                          )}
 
-                            {!!tvShowDetailData.first_air_date && (
-                              <ItemField>
-                                <ItemLabel>First Air Date</ItemLabel>
-                                {": "}
-                                <ItemLabelContent>
-                                  {tvShowDetailData.first_air_date}
-                                </ItemLabelContent>
-                              </ItemField>
-                            )}
+                          {movieDetailData.belongs_to_collection && (
+                            <ItemFieldFlex>
+                              <ItemLabel>Collection</ItemLabel>
+                              <ItemLabelContentFlex>
+                                <ItemContentImage src={collectionImageSrc} />
+                                <span style={{ marginTop: 10 }}>
+                                  {movieDetailData.belongs_to_collection.name}
+                                </span>
+                              </ItemLabelContentFlex>
+                            </ItemFieldFlex>
+                          )}
 
-                            {!!tvShowDetailData.last_air_date && (
-                              <ItemField>
-                                <ItemLabel>Last Air Date</ItemLabel>
-                                {": "}
-                                <ItemLabelContent>
-                                  {tvShowDetailData.last_air_date}
-                                </ItemLabelContent>
-                              </ItemField>
-                            )}
+                          <ItemFieldFlex>
+                            <ItemLabel>Similar</ItemLabel>
+                            <ItemLabelContentFlex>
+                              <Carousel
+                                id="similar"
+                                items={itemsMoviesSimilar}
+                                images={imagesMoviesSimilar}
+                                onOpenItem={onOpenItem}
+                              />
+                            </ItemLabelContentFlex>
+                          </ItemFieldFlex>
 
+                          <ItemFieldFlex>
+                            <ItemLabel>Recommended</ItemLabel>
+                            <ItemLabelContentFlex>
+                              <Carousel
+                                id="recommended"
+                                items={itemsMoviesRecommended}
+                                images={imagesMoviesRecommended}
+                                onOpenItem={onOpenItem}
+                              />
+                            </ItemLabelContentFlex>
+                          </ItemFieldFlex>
+
+                          <Padding />
+                        </ItemContent>
+                      </>
+                    )}
+                  </ModalContentMultiple>
+                )}
+                {tvShowDetailStatus === "success" && (
+                  <ModalContentMultiple>
+                    <ItemPoster>
+                      {imageMainPosterStatus === "error" && <ErrorComponent />}
+                      {imageMainPosterStatus === "pending" && (
+                        <Loader>
+                          <ItemPosterLoadIndicatorPlaceholder />
+                        </Loader>
+                      )}
+                      {imageMainPosterStatus === "success" && imageMainPoster}
+                    </ItemPoster>
+                    {tvShowDetailData && (
+                      <>
+                        <ItemTitle>{tvShowDetailData.name}</ItemTitle>
+
+                        <ItemDivider />
+
+                        <ItemContent>
+                          <ItemField>
+                            <ItemLabel>Original Title</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {tvShowDetailData.original_name}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>Status</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {tvShowDetailData.status}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>In Production</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {tvShowDetailData.in_production ? "Yes" : "No"}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          {!!tvShowDetailData.type && (
                             <ItemField>
-                              <ItemLabel>Genres</ItemLabel>
+                              <ItemLabel>Type</ItemLabel>
                               {": "}
                               <ItemLabelContent>
-                                {tvShowDetailData.genres.map(
-                                  (genre, index, genres) => {
+                                {tvShowDetailData.type}
+                              </ItemLabelContent>
+                            </ItemField>
+                          )}
+
+                          <ItemField>
+                            <ItemLabel>Created By</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {tvShowDetailData.created_by.map(
+                                (creator, index, genres) => {
+                                  return (
+                                    <span key={index}>
+                                      {creator.name}
+                                      {index !== genres.length - 1 && ", "}
+                                    </span>
+                                  );
+                                },
+                              )}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          {!!tvShowDetailData.first_air_date && (
+                            <ItemField>
+                              <ItemLabel>First Air Date</ItemLabel>
+                              {": "}
+                              <ItemLabelContent>
+                                {tvShowDetailData.first_air_date}
+                              </ItemLabelContent>
+                            </ItemField>
+                          )}
+
+                          {!!tvShowDetailData.last_air_date && (
+                            <ItemField>
+                              <ItemLabel>Last Air Date</ItemLabel>
+                              {": "}
+                              <ItemLabelContent>
+                                {tvShowDetailData.last_air_date}
+                              </ItemLabelContent>
+                            </ItemField>
+                          )}
+
+                          <ItemField>
+                            <ItemLabel>Genres</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {tvShowDetailData.genres.map(
+                                (genre, index, genres) => {
+                                  return (
+                                    <span key={index}>
+                                      {genre.name}
+                                      {index !== genres.length - 1 && ", "}
+                                    </span>
+                                  );
+                                },
+                              )}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>Number of Seasons</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {tvShowDetailData.number_of_seasons}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>Number of Episodes</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {tvShowDetailData.number_of_episodes}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>Popularity</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {tvShowDetailData.popularity}
+                            </ItemLabelContent>
+                          </ItemField>
+                          <ItemField>
+                            <ItemLabel>Vote Average</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {tvShowDetailData.vote_average}
+                            </ItemLabelContent>
+                          </ItemField>
+                          <ItemField>
+                            <ItemLabel>Vote Count</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {tvShowDetailData.vote_count}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          <ItemField>
+                            <ItemLabel>Spoken Languages</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {tvShowDetailData.spoken_languages.length === 0
+                                ? "Unknown"
+                                : tvShowDetailData.spoken_languages.map(
+                                    (language, index, languages) => {
+                                      return (
+                                        <React.Fragment key={index}>
+                                          <span>{language.english_name}</span>{" "}
+                                          {language.name &&
+                                            language.name !== "English" && (
+                                              <span>
+                                                &lt;{language.name}
+                                                &gt;
+                                              </span>
+                                            )}
+                                          {index !== languages.length - 1 &&
+                                            ", "}
+                                        </React.Fragment>
+                                      );
+                                    },
+                                  )}
+                            </ItemLabelContent>
+                          </ItemField>
+
+                          {!!tvShowDetailData.tagline && (
+                            <ItemField>
+                              <ItemLabel>Tagline</ItemLabel>
+                              {": "}
+                              <ItemLabelContent>
+                                {tvShowDetailData.tagline}
+                              </ItemLabelContent>
+                            </ItemField>
+                          )}
+
+                          {!!tvShowDetailData.overview && (
+                            <ItemField>
+                              <ItemLabel>Overview</ItemLabel>
+                              {": "}
+                              <ItemLabelContent>
+                                {tvShowDetailData.overview}
+                              </ItemLabelContent>
+                            </ItemField>
+                          )}
+
+                          {!!tvShowDetailData.homepage && (
+                            <ItemField>
+                              <ItemLabel>Homepage</ItemLabel>
+                              {": "}
+                              <ItemLabelContent>
+                                <a
+                                  href={tvShowDetailData.homepage}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {tvShowDetailData.homepage.replace(
+                                    /^https?:\/\//,
+                                    "",
+                                  )}
+                                </a>
+                              </ItemLabelContent>
+                            </ItemField>
+                          )}
+
+                          {tvShowDetailData.networks.length === 0 ? (
+                            <ItemField>
+                              <ItemLabel>Networks</ItemLabel>
+                              {": "}
+                              <ItemLabelContent>Unknown</ItemLabelContent>
+                            </ItemField>
+                          ) : (
+                            <ItemFieldFlex>
+                              <ItemLabel>Networks</ItemLabel>
+                              <ItemLabelContentGrid>
+                                {tvShowDetailData.networks.map(
+                                  (network, index) => {
                                     return (
-                                      <span key={index}>
-                                        {genre.name}
-                                        {index !== genres.length - 1 && ", "}
-                                      </span>
+                                      <div key={index}>
+                                        {network.logo_path && (
+                                          <ItemContentImage
+                                            src={getImageUrl({
+                                              pathSegment: network.logo_path,
+                                              format: "w500",
+                                            })}
+                                          />
+                                        )}
+                                        <span>{network.name}</span>{" "}
+                                        {!!network.origin_country && (
+                                          <span>
+                                            &lt;{network.origin_country}
+                                            &gt;
+                                          </span>
+                                        )}
+                                      </div>
                                     );
                                   },
                                 )}
-                              </ItemLabelContent>
-                            </ItemField>
+                              </ItemLabelContentGrid>
+                            </ItemFieldFlex>
+                          )}
 
-                            <ItemField>
-                              <ItemLabel>Number of Seasons</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {tvShowDetailData.number_of_seasons}
-                              </ItemLabelContent>
-                            </ItemField>
-
-                            <ItemField>
-                              <ItemLabel>Number of Episodes</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {tvShowDetailData.number_of_episodes}
-                              </ItemLabelContent>
-                            </ItemField>
-
-                            <ItemField>
-                              <ItemLabel>Popularity</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {tvShowDetailData.popularity}
-                              </ItemLabelContent>
-                            </ItemField>
-                            <ItemField>
-                              <ItemLabel>Vote Average</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {tvShowDetailData.vote_average}
-                              </ItemLabelContent>
-                            </ItemField>
-                            <ItemField>
-                              <ItemLabel>Vote Count</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {tvShowDetailData.vote_count}
-                              </ItemLabelContent>
-                            </ItemField>
-
-                            <ItemField>
-                              <ItemLabel>Spoken Languages</ItemLabel>
-                              {": "}
-                              <ItemLabelContent>
-                                {tvShowDetailData.spoken_languages.length === 0
-                                  ? "Unknown"
-                                  : tvShowDetailData.spoken_languages.map(
-                                      (language, index, languages) => {
-                                        return (
-                                          <React.Fragment key={index}>
-                                            <span>{language.english_name}</span>{" "}
-                                            {language.name &&
-                                              language.name !== "English" && (
-                                                <span>
-                                                  &lt;{language.name}
-                                                  &gt;
-                                                </span>
-                                              )}
-                                            {index !== languages.length - 1 &&
-                                              ", "}
-                                          </React.Fragment>
-                                        );
-                                      },
-                                    )}
-                              </ItemLabelContent>
-                            </ItemField>
-
-                            {!!tvShowDetailData.tagline && (
-                              <ItemField>
-                                <ItemLabel>Tagline</ItemLabel>
-                                {": "}
-                                <ItemLabelContent>
-                                  {tvShowDetailData.tagline}
-                                </ItemLabelContent>
-                              </ItemField>
-                            )}
-
-                            {!!tvShowDetailData.overview && (
-                              <ItemField>
-                                <ItemLabel>Overview</ItemLabel>
-                                {": "}
-                                <ItemLabelContent>
-                                  {tvShowDetailData.overview}
-                                </ItemLabelContent>
-                              </ItemField>
-                            )}
-
-                            {!!tvShowDetailData.homepage && (
-                              <ItemField>
-                                <ItemLabel>Homepage</ItemLabel>
-                                {": "}
-                                <ItemLabelContent>
-                                  <a
-                                    href={tvShowDetailData.homepage}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    {tvShowDetailData.homepage.replace(
-                                      /^https?:\/\//,
-                                      "",
-                                    )}
-                                  </a>
-                                </ItemLabelContent>
-                              </ItemField>
-                            )}
-
-                            {tvShowDetailData.networks.length === 0 ? (
-                              <ItemField>
-                                <ItemLabel>Networks</ItemLabel>
-                                {": "}
-                                <ItemLabelContent>Unknown</ItemLabelContent>
-                              </ItemField>
-                            ) : (
-                              <ItemFieldFlex>
-                                <ItemLabel>Networks</ItemLabel>
-                                <ItemLabelContentGrid>
-                                  {tvShowDetailData.networks.map(
-                                    (network, index) => {
+                          <ItemField>
+                            <ItemLabel>Production Countries</ItemLabel>
+                            {": "}
+                            <ItemLabelContent>
+                              {tvShowDetailData.production_countries.length ===
+                              0
+                                ? "Unknown"
+                                : tvShowDetailData.production_countries.map(
+                                    (country, index, countries) => {
                                       return (
-                                        <div key={index}>
-                                          {network.logo_path && (
-                                            <ItemContentImage
-                                              src={getImageUrl({
-                                                pathSegment: network.logo_path,
-                                                format: "w500",
-                                              })}
-                                            />
-                                          )}
-                                          <span>{network.name}</span>{" "}
-                                          {!!network.origin_country && (
-                                            <span>
-                                              &lt;{network.origin_country}
-                                              &gt;
-                                            </span>
-                                          )}
-                                        </div>
+                                        <React.Fragment key={index}>
+                                          <span>{country.name}</span>
+                                          {index !== countries.length - 1 &&
+                                            ", "}
+                                        </React.Fragment>
                                       );
                                     },
                                   )}
-                                </ItemLabelContentGrid>
-                              </ItemFieldFlex>
-                            )}
+                            </ItemLabelContent>
+                          </ItemField>
 
+                          {tvShowDetailData.production_companies.length ===
+                          0 ? (
                             <ItemField>
-                              <ItemLabel>Production Countries</ItemLabel>
+                              <ItemLabel>Production Companies</ItemLabel>
                               {": "}
-                              <ItemLabelContent>
-                                {tvShowDetailData.production_countries
-                                  .length === 0
-                                  ? "Unknown"
-                                  : tvShowDetailData.production_countries.map(
-                                      (country, index, countries) => {
-                                        return (
-                                          <React.Fragment key={index}>
-                                            <span>{country.name}</span>
-                                            {index !== countries.length - 1 &&
-                                              ", "}
-                                          </React.Fragment>
-                                        );
-                                      },
-                                    )}
-                              </ItemLabelContent>
+                              <ItemLabelContent>Unknown</ItemLabelContent>
                             </ItemField>
-
-                            {tvShowDetailData.production_companies.length ===
-                            0 ? (
-                              <ItemField>
-                                <ItemLabel>Production Companies</ItemLabel>
-                                {": "}
-                                <ItemLabelContent>Unknown</ItemLabelContent>
-                              </ItemField>
-                            ) : (
-                              <ItemFieldFlex>
-                                <ItemLabel>Production Companies</ItemLabel>
-                                <ItemLabelContentGrid>
-                                  {tvShowDetailData.production_companies.map(
-                                    (company, index) => {
-                                      return (
-                                        <div key={index}>
-                                          {company.logo_path && (
-                                            <ItemContentImage
-                                              src={getImageUrl({
-                                                pathSegment: company.logo_path,
-                                                format: "w500",
-                                              })}
-                                            />
-                                          )}
-                                          <span>{company.name}</span>{" "}
-                                          {!!company.origin_country && (
-                                            <span>
-                                              &lt;{company.origin_country}
-                                              &gt;
-                                            </span>
-                                          )}
-                                        </div>
-                                      );
-                                    },
-                                  )}
-                                </ItemLabelContentGrid>
-                              </ItemFieldFlex>
-                            )}
-
+                          ) : (
                             <ItemFieldFlex>
-                              <ItemLabel>Similar</ItemLabel>
-                              <ItemLabelContentFlex>
-                                <Carousel
-                                  id="similar"
-                                  items={itemsTvShowsSimilar}
-                                  images={imagesTvShowsSimilar}
-                                  onOpenItem={onOpenMovie}
-                                />
-                              </ItemLabelContentFlex>
+                              <ItemLabel>Production Companies</ItemLabel>
+                              <ItemLabelContentGrid>
+                                {tvShowDetailData.production_companies.map(
+                                  (company, index) => {
+                                    return (
+                                      <div key={index}>
+                                        {company.logo_path && (
+                                          <ItemContentImage
+                                            src={getImageUrl({
+                                              pathSegment: company.logo_path,
+                                              format: "w500",
+                                            })}
+                                          />
+                                        )}
+                                        <span>{company.name}</span>{" "}
+                                        {!!company.origin_country && (
+                                          <span>
+                                            &lt;{company.origin_country}
+                                            &gt;
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  },
+                                )}
+                              </ItemLabelContentGrid>
                             </ItemFieldFlex>
+                          )}
 
-                            <ItemFieldFlex>
-                              <ItemLabel>Recommended</ItemLabel>
-                              <ItemLabelContentFlex>
-                                <Carousel
-                                  id="recommended"
-                                  items={itemsTvShowsRecommended}
-                                  images={imagesTvShowsRecommended}
-                                  onOpenItem={onOpenMovie}
-                                />
-                              </ItemLabelContentFlex>
-                            </ItemFieldFlex>
+                          <ItemFieldFlex>
+                            <ItemLabel>Similar</ItemLabel>
+                            <ItemLabelContentFlex>
+                              <Carousel
+                                id="similar"
+                                items={itemsTvShowsSimilar}
+                                images={imagesTvShowsSimilar}
+                                onOpenItem={onOpenItem}
+                              />
+                            </ItemLabelContentFlex>
+                          </ItemFieldFlex>
 
-                            <Padding />
-                          </ItemContent>
-                        </>
-                      )}
-                    </>
-                  )}
-                </ModalContent>
+                          <ItemFieldFlex>
+                            <ItemLabel>Recommended</ItemLabel>
+                            <ItemLabelContentFlex>
+                              <Carousel
+                                id="recommended"
+                                items={itemsTvShowsRecommended}
+                                images={imagesTvShowsRecommended}
+                                onOpenItem={onOpenItem}
+                              />
+                            </ItemLabelContentFlex>
+                          </ItemFieldFlex>
+
+                          <Padding />
+                        </ItemContent>
+                      </>
+                    )}
+                  </ModalContentMultiple>
+                )}
               </Modal>
             </ModalContainer>
           </>

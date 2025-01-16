@@ -66,7 +66,7 @@ export function TvShows() {
   const pathMatchPattern = `${BASE_PATH}/tv-shows/:${pathMatchParam}`;
   const searchParam = "list";
 
-  const onOpenTvShow = useCallback<OnOpenItem>(
+  const onOpenItem = useCallback<OnOpenItem>(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ({ carouselId, itemId, title, image }) => {
       navigate(`${BASE_PATH}/tv-shows/${itemId}?${searchParam}=${carouselId}`, {
@@ -78,13 +78,9 @@ export function TvShows() {
     [navigate],
   );
 
-  const onClickModalOverlay = useCallback<OnCloseItem>(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ({ itemId, title }) => {
-      domainBoundNavigateBack({ basePath: BASE_PATH });
-    },
-    [domainBoundNavigateBack],
-  );
+  const onClickModalOverlay = useCallback<OnCloseItem>(() => {
+    domainBoundNavigateBack({ fallbackPath: BASE_PATH });
+  }, [domainBoundNavigateBack]);
 
   const {
     bannerMovieImageSrc,
@@ -156,7 +152,7 @@ export function TvShows() {
               id="airing-today"
               items={itemsAiringToday}
               images={imagesAiringToday}
-              onOpenItem={onOpenTvShow}
+              onOpenItem={onOpenItem}
             />
           </CarouselContainer>
         )}
@@ -170,7 +166,7 @@ export function TvShows() {
               id="on-the-air"
               items={itemsOnTheAir}
               images={imagesOnTheAir}
-              onOpenItem={onOpenTvShow}
+              onOpenItem={onOpenItem}
             />
           </CarouselContainer>
         )}
@@ -184,7 +180,7 @@ export function TvShows() {
               id="popular"
               items={itemsPopular}
               images={imagesPopular}
-              onOpenItem={onOpenTvShow}
+              onOpenItem={onOpenItem}
             />
           </CarouselContainer>
         )}
@@ -198,7 +194,7 @@ export function TvShows() {
               id="top-rated"
               items={itemsTopRated}
               images={imagesTopRated}
-              onOpenItem={onOpenTvShow}
+              onOpenItem={onOpenItem}
             />
           </CarouselContainer>
         )}
@@ -208,6 +204,7 @@ export function TvShows() {
         pathMatchPattern={pathMatchPattern}
         pathMatchParam={pathMatchParam}
         searchParam={searchParam}
+        onOpenItem={onOpenItem}
         onClickModalOverlay={onClickModalOverlay}
       />
     </TvShowsBase>

@@ -627,3 +627,65 @@ export async function getTvShowsRecommended({
     return null;
   }
 }
+
+//////////////////////////////////////////
+
+export interface SearchMovieResult {
+  page: number;
+  total_pages: number;
+  results: Movie[];
+  total_results: number;
+}
+
+export type SearchMovieParams = {
+  query: string;
+};
+
+// https://developer.themoviedb.org/reference/search-movie
+export async function searchMovie({ query }: SearchMovieParams) {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/search/movie?query=${query}&include_adult=false&language=en-US&page=1`,
+      fetchOptions,
+    );
+    if (!response.ok) {
+      throw new Error(
+        `Error: ${response.status} ${response.statusText} (query: ${query})`,
+      );
+    }
+    return response.json() as unknown as SearchMovieResult;
+  } catch (error) {
+    console.warn(error);
+    return null;
+  }
+}
+
+export interface SearchTvShowResult {
+  page: number;
+  total_pages: number;
+  results: TvShow[];
+  total_results: number;
+}
+
+export type SearchTvShowParams = {
+  query: string;
+};
+
+// https://developer.themoviedb.org/reference/search-tv
+export async function searchTvShow({ query }: SearchTvShowParams) {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/search/tv?query=${query}&include_adult=false&language=en-US&page=1`,
+      fetchOptions,
+    );
+    if (!response.ok) {
+      throw new Error(
+        `Error: ${response.status} ${response.statusText} (query: ${query})`,
+      );
+    }
+    return response.json() as unknown as SearchTvShowResult;
+  } catch (error) {
+    console.warn(error);
+    return null;
+  }
+}

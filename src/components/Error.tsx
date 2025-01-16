@@ -57,7 +57,7 @@ export const Error = withMemoAndRef<"div", HTMLDivElement, ErrorProps>({
     };
 
     const goPrevPage = () => {
-      domainBoundNavigateBack({ basePath: BASE_PATH });
+      domainBoundNavigateBack({ fallbackPath: BASE_PATH });
     };
 
     return (

@@ -76,16 +76,13 @@ const CarouselRowContent = styled(motion.div).withConfig({
   );
   gap: 10px;
   @container (max-width: 600px) {
-    & {
-      gap: 0;
-    }
+    gap: 0;
   }
 `;
 
 const CarouselItemBox = styled(motion.div)`
   transform-style: preserve-3d;
   position: relative;
-  width: 100%;
 
   // transform-origin: center bottom;
   // &:first-child {
@@ -205,7 +202,7 @@ const rowContentVariants: Variants = {
 
 const itemBoxVariants: Variants = {
   initial: {
-    // scale: 1,
+    scale: 1,
   },
   hover: {
     // scale: 1.3,
@@ -601,7 +598,6 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                             ref={(el) => {
                               refCarouselItemBoxes.current[itemIndex] = el;
                             }}
-                            layout
                             layoutId={id + item.id}
                             variants={itemBoxVariants}
                             initial="initial"
@@ -616,25 +612,6 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                               index,
                             })}
                             // ㄴ onLayoutAnimationStart는 fromModal (다시 되돌아오는 방향)에서만 발생해서 `onLayoutAnimationStart` 보다 `onTapStart`가 더 잘 맞는다.
-                            // style={{
-                            //   originX: 0,
-                            //   originY: 1,
-                            //   scaleX: 1,
-                            //   scaleY: 1,
-                            // }}
-                            // onLayoutAnimationComplete={() => {
-                            //   setTimeout(() => {
-                            //     if (!refCarouselItemBoxes.current[itemIndex]) {
-                            //       return;
-                            //     }
-                            //     console.log(
-                            //       refCarouselItemBoxes.current[itemIndex],
-                            //     );
-                            //     refCarouselItemBoxes.current[
-                            //       itemIndex
-                            //     ].style.transformOrigin = "";
-                            //   }, 1);
-                            // }}
                           >
                             <CarouselItemPoster>
                               {imageComponentObjs[itemIndex].status ===
@@ -658,7 +635,6 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                             </CarouselItemPoster>
                             <CarouselItemTooltipOverflowParentGuard>
                               <CarouselItemTooltip
-                                // custom
                                 variants={itemTooltipVariants}
                               >
                                 <CarouselItemTooltipTitle>

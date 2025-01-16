@@ -11,7 +11,7 @@ export const router = createBrowserRouter([
   {
     path: `${BASE_PATH}/`,
     element: <Root />,
-    errorElement: <Error400 />,
+    errorElement: <Root outlet={<Error400 />} />,
     children: [
       {
         path: "",
@@ -24,11 +24,20 @@ export const router = createBrowserRouter([
       {
         path: "search",
         element: <Search />,
+        children: [
+          {
+            path: "movies/:movieId",
+            element: <Search />,
+          },
+          {
+            path: "tv-shows/:tvShowId",
+            element: <Search />,
+          },
+        ],
       },
       {
         path: "movies/:movieId",
         element: <Home />,
-        errorElement: <div>Movie DOH!</div>,
       },
       {
         path: "tv-shows/:tvShowId",

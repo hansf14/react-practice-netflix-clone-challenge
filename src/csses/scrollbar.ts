@@ -38,7 +38,7 @@ export const getScrollbarCss = (params?: GetCssScrollbarParams) => {
       &::-webkit-scrollbar-track {
         background: ${trackBackground};
         border: ${border};
-        borderradius: ${borderRadius};
+        border-radius: ${borderRadius};
         outline: ${outline};
       }
 

@@ -85,12 +85,12 @@ export function Home() {
   const pathMatchPattern = `${BASE_PATH}/movies/:${pathMatchParam}`;
   const searchParam = "list";
 
-  const onOpenMovie = useCallback<OnOpenItem>(
+  const onOpenItem = useCallback<OnOpenItem>(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ({ carouselId, itemId, title, image }) => {
       // console.log(image);
 
-      navigate(`movies/${itemId}?${searchParam}=${carouselId}`, {
+      navigate(`${BASE_PATH}/movies/${itemId}?${searchParam}=${carouselId}`, {
         state: {
           image,
         },
@@ -99,13 +99,9 @@ export function Home() {
     [navigate],
   );
 
-  const onClickModalOverlay = useCallback<OnCloseItem>(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ({ itemId, title }) => {
-      domainBoundNavigateBack({ basePath: BASE_PATH });
-    },
-    [domainBoundNavigateBack],
-  );
+  const onClickModalOverlay = useCallback<OnCloseItem>(() => {
+    domainBoundNavigateBack({ fallbackPath: BASE_PATH });
+  }, [domainBoundNavigateBack]);
 
   const {
     bannerMovieImageSrc,
@@ -171,7 +167,7 @@ export function Home() {
               id="now-playing"
               items={itemsNowPlaying}
               images={imagesNowPlaying}
-              onOpenItem={onOpenMovie}
+              onOpenItem={onOpenItem}
             />
           </CarouselContainer>
         )}
@@ -185,7 +181,7 @@ export function Home() {
               id="popular"
               items={itemsPopular}
               images={imagesPopular}
-              onOpenItem={onOpenMovie}
+              onOpenItem={onOpenItem}
             />
           </CarouselContainer>
         )}
@@ -199,7 +195,7 @@ export function Home() {
               id="top-rated"
               items={itemsTopRated}
               images={imagesTopRated}
-              onOpenItem={onOpenMovie}
+              onOpenItem={onOpenItem}
             />
           </CarouselContainer>
         )}
@@ -213,7 +209,7 @@ export function Home() {
               id="upcoming"
               items={itemsUpcoming}
               images={imagesUpcoming}
-              onOpenItem={onOpenMovie}
+              onOpenItem={onOpenItem}
             />
           </CarouselContainer>
         )}
@@ -223,6 +219,7 @@ export function Home() {
         pathMatchPattern={pathMatchPattern}
         pathMatchParam={pathMatchParam}
         searchParam={searchParam}
+        onOpenItem={onOpenItem}
         onClickModalOverlay={onClickModalOverlay}
       />
     </HomeBase>

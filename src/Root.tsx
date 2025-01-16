@@ -128,7 +128,7 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
-const Layout = styled.main`
+const Layout = styled.div`
   flex-grow: 1;
   overflow: hidden;
   width: 100%;
@@ -141,7 +141,7 @@ const Layout = styled.main`
   color: ${({ theme }) => theme.layoutFontColor01};
 `;
 
-function Root() {
+function Root({ outlet }: { outlet?: React.ReactNode }) {
   // const { theme } = useThemeContext(lightTheme);
   // console.log(theme);
 
@@ -159,7 +159,7 @@ function Root() {
         <QueryClientProvider client={queryClient}>
           <Layout>
             <HeaderNavBar />
-            <Outlet />
+            {!!outlet ? outlet : <Outlet />}
             <Footer />
           </Layout>
           <ReactQueryDevtools initialIsOpen={false} />
