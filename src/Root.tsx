@@ -4,7 +4,7 @@ import { styled, ThemeProvider, createGlobalStyle } from "styled-components";
 import { Outlet } from "react-router-dom";
 import { queryClient } from "@/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+// import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { HeaderNavBar } from "@/components/HeaderNavBar";
 import { Footer } from "@/components/Footer";
 import { getScrollbarCss } from "@/csses/scrollbar";
@@ -80,7 +80,7 @@ const GlobalStyle = createGlobalStyle`
   }
   
   html {
-    overflow-y: auto;
+    overflow-y: scroll;
     width: 100%;
 
     font-family: "Source Sans 3", sans-serif;
@@ -104,6 +104,8 @@ const GlobalStyle = createGlobalStyle`
   }
 
   html, body {
+    height: auto; 
+
     ${({
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       theme,
@@ -162,7 +164,7 @@ function Root({ outlet }: { outlet?: React.ReactNode }) {
             {!!outlet ? outlet : <Outlet />}
             <Footer />
           </Layout>
-          <ReactQueryDevtools initialIsOpen={false} />
+          {/* <ReactQueryDevtools initialIsOpen={false} /> */}
         </QueryClientProvider>
       </HelmetProvider>
     </ThemeProvider>

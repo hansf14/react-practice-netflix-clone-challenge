@@ -195,7 +195,7 @@ export function Search() {
           tvShowSearchData &&
           tvShowSearchData.results.length === 0 ? (
             <ContainerSingle>
-              <ResultNotFound />
+              <ResultNotFound title="Result Not Found" />
             </ContainerSingle>
           ) : (
             <Carousel

@@ -67,8 +67,10 @@ const CarouselRowContent = styled(motion.div).withConfig({
   shouldForwardProp: (prop) => !["itemCntPerRow"].includes(prop),
 })<CarouselRowContentProps>`
   transform-style: preserve-3d;
-  width: 100%;
+  user-select: none;
+  touch-action: pan-y;
 
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(
     ${({ itemCntPerRow }) => itemCntPerRow.toString()},
@@ -200,21 +202,21 @@ const rowContentVariants: Variants = {
   initial: { x: 0 },
 };
 
-const itemBoxVariants: Variants = {
-  initial: {
-    scale: 1,
-  },
-  hover: {
-    // scale: 1.3,
-    y: -10,
-    z: 10,
-    transition: {
-      ease: "linear",
-      // delay: 0.5,
-      duration: 0.3,
-    },
-  },
-};
+// const itemBoxVariants: Variants = {
+//   initial: {
+//     scale: 1,
+//   },
+//   // hover: {
+//   //   // scale: 1.3,
+//   //   y: -10,
+//   //   z: 10,
+//   //   transition: {
+//   //     ease: "linear",
+//   //     // delay: 0.5,
+//   //     duration: 0.3,
+//   //   },
+//   // },
+// };
 // scale: 1 -> 1.3
 // transform-origin: center bottom;
 // &:first-child {
@@ -226,17 +228,17 @@ const itemBoxVariants: Variants = {
 // ㄴ Framer Motion bug [1]: only applying scale to scaleY
 // ㄴ Framer Motion bug [2]: transform-origin gets left undeleted after shared layout animation
 
-const itemTooltipVariants: Variants = {
-  hover: {
-    opacity: 1,
-    y: "calc(100% - 1px)", // prevent subpixel: 1px
-    transition: {
-      ease: "linear",
-      delay: 0.5,
-      duration: 0.3,
-    },
-  },
-};
+// const itemTooltipVariants: Variants = {
+//   hover: {
+//     opacity: 1,
+//     y: "calc(100% - 1px)", // prevent subpixel: 1px
+//     transition: {
+//       ease: "linear",
+//       delay: 0.5,
+//       duration: 0.3,
+//     },
+//   },
+// };
 
 type Size = {
   width?: number;
@@ -555,6 +557,20 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
       ],
     );
 
+    const [stateHoveredIndex, seStateHoveredIndex] = useState<number>(-1);
+    const onHoverStart = useCallback(
+      ({ index }: { index: number }) =>
+        () => {
+          console.log("[onPointerEnter]");
+          seStateHoveredIndex(index);
+          console.log(index);
+        },
+      [],
+    );
+    const onHoverEnd = useCallback(() => {
+      seStateHoveredIndex(-1);
+    }, []);
+
     return (
       <>
         <CarouselBase ref={refBase} {...otherProps}>
@@ -578,11 +594,15 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                     onPointerUp={onPointerUp}
                     // * https://motion.dev/docs/react-use-drag-controls
                     // Touch support
-                    // To support touch screens, the triggering element should have the touch-action: none style applied.
+                    // To support touch screens, the triggering element should have the `touch-action: none` style applied.
                     // * userSelect
                     // Make text selectable
-                    // To make draggable complete, need this property.
-                    style={{ touchAction: "none", userSelect: "none" }}
+                    // To make draggable complete, need this property `userSelect: "none"`.
+                    // ㄴ 사용해 본 결과: This disables scroll screenshot functionality in mobile phones.
+                    // But without this, the drag swipe functionality doesn't work.
+                    // 해결)
+                    // user-select: none;
+                    // touch-action: pan-y;
                   >
                     {items
                       .slice(
@@ -593,15 +613,21 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                         const itemIndex = itemCntPerRow * rowIndex + index;
 
                         return (
+                          // <motion.div key={item.id} layoutId={id + item.id}>
                           <CarouselItemBox
                             key={item.id}
                             ref={(el) => {
                               refCarouselItemBoxes.current[itemIndex] = el;
                             }}
-                            layoutId={id + item.id}
-                            variants={itemBoxVariants}
-                            initial="initial"
-                            whileHover="hover"
+                            // layoutId={id + item.id}
+                            // ㄴ Framer Motion bug
+                            // variants={itemBoxVariants}
+                            // initial="initial"
+                            // ㄴ variants forces/adds some properties on the style.
+                            // I should replace it with another wrapper to use `layoutId` to correctly function.
+                            // whileHover="hover"
+                            // ㄴ whileHover gets triggered inadvertently when doing a scroll screenshot in mobile.
+                            // I should replace it with `onPointerEnter`, `onPointerLeave`.
                             onClick={onClickItem({
                               carouselId: id,
                               itemId: item.id.toString(),
@@ -612,6 +638,17 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                               index,
                             })}
                             // ㄴ onLayoutAnimationStart는 fromModal (다시 되돌아오는 방향)에서만 발생해서 `onLayoutAnimationStart` 보다 `onTapStart`가 더 잘 맞는다.
+                            onPointerEnter={onHoverStart({
+                              index: itemIndex,
+                            })}
+                            onPointerLeave={onHoverEnd}
+                            style={{
+                              transition: "transform 0.3s linear",
+                              transform:
+                                stateHoveredIndex === itemIndex
+                                  ? "translate3d(0, -10px, 10px)"
+                                  : "translate3d(0, 0, 0)",
+                            }}
                           >
                             <CarouselItemPoster>
                               {imageComponentObjs[itemIndex].status ===
@@ -635,7 +672,17 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                             </CarouselItemPoster>
                             <CarouselItemTooltipOverflowParentGuard>
                               <CarouselItemTooltip
-                                variants={itemTooltipVariants}
+                                // variants={itemTooltipVariants}
+                                style={{
+                                  transition:
+                                    "opacity 0.3s linear 0.5s, transform 0.3s linear 0.5s",
+                                  transform:
+                                    stateHoveredIndex === itemIndex
+                                      ? "translate3d(0, calc(100% - 1px), 10px)"
+                                      : "translate3d(0, 0, 0)",
+                                  opacity:
+                                    stateHoveredIndex === itemIndex ? 1 : 0,
+                                }}
                               >
                                 <CarouselItemTooltipTitle>
                                   {item.title}
@@ -643,6 +690,7 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
                               </CarouselItemTooltip>
                             </CarouselItemTooltipOverflowParentGuard>
                           </CarouselItemBox>
+                          // </motion.div>
                         );
                       })}
                   </CarouselRowContent>
