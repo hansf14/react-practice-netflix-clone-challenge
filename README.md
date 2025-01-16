@@ -70,7 +70,7 @@
   </div>
 </p>
 
-- **Demo: [React Practice Trello Clone Challenge](https://hansf14.github.io/react-practice-trello-clone-challenge)**
+- **Demo: [React Practice Netflix Clone Challenge](https://hansf14.github.io/react-practice-netflix-clone-challenge)**
 - **Preview Screenshots**
 <p>
   <div>
