@@ -1,8 +1,7 @@
-# React Practice Trello Clone Challenge
+# React Practice Netflix Clone Challenge
 
 - **One of my personal digital nomad life projects (for practice).**
-- **Project current status: [in progress]**
-<!-- - **Project current status: [complete]**:ballot_box_with_check:
+- **Project current status: [complete]**:ballot_box_with_check:
 - **Tech**
 <p>
   <div>
@@ -12,12 +11,22 @@
   <div>
     &emsp;
     <img src="https://img.shields.io/badge/Vite-646CFF?style=flat&logo=vite&logoColor=white&logoWidth=25" height="25px"/>
+  </div>
+  <div>
+    &emsp;
     <img src="https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=white&logoWidth=25" height="25px"/>
-    <img src="https://img.shields.io/badge/Recoil-3578E5?style=flat&logo=recoil&logoColor=white&logoWidth=25" height="25px"/>
   </div>
   <div>
     &emsp;
     <img src="https://img.shields.io/badge/Styled Components-DB7093?style=flat&logo=styledcomponents&logoColor=white&logoWidth=25" height="25px"/>
+  </div>
+  <div>
+    &emsp;
+    <img src="https://img.shields.io/badge/React%20Router-EC5990?style=flat&logo=reactrouter&logoColor=white&logoWidth=25" height="25px"/>
+  </div>
+    <div>
+    &emsp;
+    <img src="https://img.shields.io/badge/React%20Query-FF4154?style=flat&logo=reactquery&logoColor=white&logoWidth=25" height="25px"/>
   </div>
   <div>
     &emsp;
@@ -29,38 +38,38 @@
   </div>
   <div>
     &emsp;
-    <img src="https://img.shields.io/badge/@hello%E2%80%93pangea%2Fdnd-black?style=flat&logo=@hello%E2%80%93pangea%2Fdnd&logoColor=white&logoWidth=25" height="25px"/>
+    <img src="https://img.shields.io/badge/Framer%20Motion-0055FF?style=flat&logo=framer%E2%80%93use&logoColor=white&logoWidth=25" height="25px"/>
   </div>
   <div>
     &emsp;
-    <img src="https://img.shields.io/badge/class%E2%80%93transformer-black?style=flat&logo=class%E2%80%93transformer&logoColor=white&logoWidth=25" height="25px"/>
+    <img src="https://img.shields.io/badge/react--use-black?style=flat&logo=react%E2%80%93use&logoColor=white&logoWidth=25" height="25px"/>
+  </div>
+  <div>
+    &emsp;
+    <img src="https://img.shields.io/badge/validator-black?style=flat&logo=validator%E2%80%93use&logoColor=white&logoWidth=25" height="25px"/>
+  </div>
+  <div>
+    &emsp;
+    <img src="https://img.shields.io/badge/Prettier-F7B93E?style=flat&logo=prettier&logoColor=white&logoWidth=25" height="25px"/>
+  </div>
+  <div>
+    &emsp;
+    <img src="https://img.shields.io/badge/ESLint-4B32C3?style=flat&logo=eslint&logoColor=white&logoWidth=25" height="25px"/>
+  </div>
+  <div>
+    &emsp;
+    <img src="https://img.shields.io/badge/Yarn PnP-2C8EBB?style=flat&logo=yarn&logoColor=white&logoWidth=25" height="25px"/>
+  </div>
+  <div>
+    &emsp;
+    <img src="https://img.shields.io/badge/SWC-F8C457?style=flat&logo=swc&logoColor=white&logoWidth=25" height="25px"/>
+  </div>
+  <div>
+    &emsp;
+    <img src="https://img.shields.io/badge/gh--pages-222222?style=flat&logo=githubpages&logoColor=white&logoWidth=25" height="25px"/>
   </div>
 </p>
 
-- **Features**
-  - **Category CRUD**
-  - **Task CRUD**
-  - **Supports multi-line category**
-  - **Supports multi-line task**
-  - **Category(board) position manipulation via DnD**
-  - **Task(card) position manipulation via DnD**
-  - **Persistency (refresh, reopen)**
-    - **Auto-save whenever change is made**
-    - **Able to manually reset/remove the saved data**
-    - **Able to manually save the current data**
-  - **Self-implemented DnD drop position preview**
-    - **cf> useDragScroll.tsx**
-    - **Whenever a category(board)/task(card) is dragged, a drop position preview is displayed.**
-  - **Self-implemented DnD auto-scroll**
-    - **cf> useDragPositionPreview.ts**
-    - **Whenever the pointer/cursor is near the edge of the container/window while dragging, the auto-scroll is triggered and scrolls the container/window.**
-    - **I decided to implement it by myself because...**
-      - **1. The @hello-pangea/dnd & react-beautiful-dnd libraries don't support auto scroll buffer zone and scroll speed for multiple scroll containers.**
-      - **2. The @hello-pangea/dnd & react-beautiful-dnd libraries don't support auto-scroll for nested scroll containers.** 
-  - **Full mobile support**
-    - **Responsive design**
-    - **DnD, drag position preview and auto-scroll are all also available at mobile.**
-  - **Other many little functionalities for better UX**
 - **Demo: [React Practice Trello Clone Challenge](https://hansf14.github.io/react-practice-trello-clone-challenge)**
 - **Preview Screenshots**
 <p>
@@ -68,6 +77,96 @@
     &emsp;
     <img width="500" src="preview-screenshots/01.png" alt="01.png" />
   </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/02.png" alt="02.png" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/03.png" alt="03.png" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/04.png" alt="04.png" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/05.png" alt="05.png" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/06.png" alt="06.png" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/07.png" alt="07.png" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/08.png" alt="08.png" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/09.png" alt="09.png" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/10.png" alt="10.png" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/11.png" alt="11.png" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/12.png" alt="12.png" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/13.jpg" alt="13.jpg" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/14.jpg" alt="14.jpg" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/15.jpg" alt="15.jpg" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/16.jpg" alt="16.jpg" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/17.jpg" alt="17.jpg" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/18.jpg" alt="18.jpg" />
+  </div>
+  &emsp;
+  <div>
+    &emsp;
+    <img width="500" src="preview-screenshots/19.jpg" alt="19.jpg" />
+  </div>
 </p>
 
-<br/> -->
+<br/>
