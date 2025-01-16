@@ -557,18 +557,34 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
       ],
     );
 
+    const [stateIsScrolling, setStateIsScrolling] = useState(false);
     const [stateHoveredIndex, seStateHoveredIndex] = useState<number>(-1);
+
+    // Disables hover when doing a scroll screenshot
     const onHoverStart = useCallback(
       ({ index }: { index: number }) =>
         () => {
           console.log("[onPointerEnter]");
-          seStateHoveredIndex(index);
+          if (!stateIsScrolling) {
+            seStateHoveredIndex(index);
+          }
           console.log(index);
         },
-      [],
+      [stateIsScrolling],
     );
+
     const onHoverEnd = useCallback(() => {
       seStateHoveredIndex(-1);
+    }, []);
+
+    useEffect(() => {
+      const onScroll = () => {
+        setStateIsScrolling(true);
+        setTimeout(() => setStateIsScrolling(false), 150); // Debounce scroll status
+      };
+
+      window.addEventListener("scroll", onScroll, { passive: true });
+      return () => window.removeEventListener("scroll", onScroll);
     }, []);
 
     return (
