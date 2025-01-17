@@ -107,7 +107,7 @@ export const cssItemPosterImage = css`
 
 const CarouselItemPoster = styled.div`
   container-name: carousel-item-poster;
-  container-type: size;
+  container-type: inline-size;
 
   transform: translateZ(5px);
   aspect-ratio: 2 / 3; // Prevent subpixel problem by setting the aspect ratio to the image intrinsic dimension.
@@ -122,7 +122,7 @@ const CarouselItemPoster = styled.div`
 
 const CarouselItemPosterLoadIndicatorPlaceholder = styled.div`
   width: 100cqw;
-  height: 100cqh;
+  height: 100%;
 `;
 
 const CarouselItemTooltipOverflowParentGuard = styled.div`
@@ -560,7 +560,6 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     const [stateIsScrolling, setStateIsScrolling] = useState(false);
     const [stateHoveredIndex, seStateHoveredIndex] = useState<number>(-1);
 
-    // Disables hover when doing a scroll screenshot
     const onHoverStart = useCallback(
       ({ index }: { index: number }) =>
         () => {
@@ -577,10 +576,11 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
       seStateHoveredIndex(-1);
     }, []);
 
+    // Disable hover when doing a scroll screenshot at mobile devices.
     useEffect(() => {
       const onScroll = () => {
         setStateIsScrolling(true);
-        setTimeout(() => setStateIsScrolling(false), 150); // Debounce scroll status
+        setTimeout(() => setStateIsScrolling(false), 1); // Debounce scroll status
       };
 
       window.addEventListener("scroll", onScroll, { passive: true });
