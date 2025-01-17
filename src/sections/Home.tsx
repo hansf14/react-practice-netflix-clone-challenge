@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useMedia } from "react-use";
 import { Carousel, OnOpenItem } from "@/components/Carousel";
-import { ItemMovie, usePreprocessData } from "@/hooks/usePreprocessData";
+import { usePreprocessData } from "@/hooks/usePreprocessData";
 import {
   BASE_PATH,
   getMoviesNowPlaying,
@@ -107,22 +107,22 @@ export function Home() {
     bannerMovieImageSrc,
     images: imagesNowPlaying,
     items: itemsNowPlaying,
-  } = usePreprocessData<ItemMovie>({ data: dataNowPlaying });
+  } = usePreprocessData({ data: dataNowPlaying, dataType: "movie" });
 
-  const { images: imagesPopular, items: itemsPopular } =
-    usePreprocessData<ItemMovie>({
-      data: dataPopular,
-    });
+  const { images: imagesPopular, items: itemsPopular } = usePreprocessData({
+    data: dataPopular,
+    dataType: "movie",
+  });
 
-  const { images: imagesTopRated, items: itemsTopRated } =
-    usePreprocessData<ItemMovie>({
-      data: dataTopRated,
-    });
+  const { images: imagesTopRated, items: itemsTopRated } = usePreprocessData({
+    data: dataTopRated,
+    dataType: "movie",
+  });
 
-  const { images: imagesUpcoming, items: itemsUpcoming } =
-    usePreprocessData<ItemMovie>({
-      data: dataUpcoming,
-    });
+  const { images: imagesUpcoming, items: itemsUpcoming } = usePreprocessData({
+    data: dataUpcoming,
+    dataType: "movie",
+  });
 
   const banner = useMemo(() => {
     return !!dataNowPlaying?.results.length ? (

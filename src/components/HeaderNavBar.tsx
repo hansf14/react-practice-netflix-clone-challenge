@@ -443,7 +443,7 @@ export const HeaderNavBar = withMemoAndRef<
     const onValid = useCallback<SubmitHandler<FormData>>(
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       (data, event) => {
-        console.log("[onValid]");
+        // console.log("[onValid]");
 
         if (data["query"] !== data["queryModal"]) {
           console.warn('data["query"] !== data["queryModal"]');

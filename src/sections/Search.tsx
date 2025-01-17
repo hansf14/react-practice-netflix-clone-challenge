@@ -12,11 +12,7 @@ import {
   Carousels,
   CarouselTitle,
 } from "@/components/Carousels";
-import {
-  ItemMovie,
-  ItemTvShow,
-  usePreprocessData,
-} from "@/hooks/usePreprocessData";
+import { usePreprocessData } from "@/hooks/usePreprocessData";
 import { Carousel, OnOpenItem } from "@/components/Carousel";
 import { ModalDetailView, OnCloseItem } from "@/components/ModalDetailView";
 import { Error400 } from "@/components/Error400";
@@ -87,15 +83,15 @@ export function Search() {
   // console.log(movieSearchData);
   // console.log(tvShowSearchData);
 
-  const { images: imagesMovie, items: itemsMovie } =
-    usePreprocessData<ItemMovie>({
-      data: movieSearchData,
-    });
+  const { images: imagesMovie, items: itemsMovie } = usePreprocessData({
+    data: movieSearchData,
+    dataType: "movie",
+  });
 
-  const { images: imagesTvShow, items: itemsTvShow } =
-    usePreprocessData<ItemTvShow>({
-      data: tvShowSearchData,
-    });
+  const { images: imagesTvShow, items: itemsTvShow } = usePreprocessData({
+    data: tvShowSearchData,
+    dataType: "tv-show",
+  });
 
   const searchMoviePathMatchParam = "movieId";
   const searchMoviePathMatchPattern = `${BASE_PATH}/search/movies/:${searchMoviePathMatchParam}`;
@@ -147,8 +143,8 @@ export function Search() {
     });
   }, [query, domainBoundNavigateBack]);
 
-  console.log(movieSearchData);
-  console.log(tvShowSearchData);
+  // console.log(movieSearchData);
+  // console.log(tvShowSearchData);
 
   return (
     <SearchBase>

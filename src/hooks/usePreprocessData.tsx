@@ -11,7 +11,7 @@ import {
   Movie,
   TvShow,
 } from "@/api";
-import { SmartMerge, SmartOmit } from "@/utils";
+import { createKeyValueMapping, SmartMerge, SmartOmit } from "@/utils";
 import netflixInitialLogo from "@/assets/netflix-initial-logo.png";
 
 export type ItemMovie = SmartMerge<SmartOmit<Movie, "id"> & { id: string }>;
@@ -20,9 +20,21 @@ export type ItemTvShow = SmartMerge<
   SmartOmit<TvShow, "id"> & { id: string; title: string }
 >;
 
-export const usePreprocessData = <Item extends ItemMovie | ItemTvShow>({
+export const DataTypes = ["movie", "tv-show"] as const;
+export type DataType = (typeof DataTypes)[number];
+export const DataTypeKvMappingObj = createKeyValueMapping({ arr: DataTypes });
+export type DataTypeKvMapping = typeof DataTypeKvMappingObj;
+
+export const usePreprocessData = <
+  T extends DataType,
+  Item = T extends DataTypeKvMapping["movie"]
+    ? ItemMovie
+    : T extends DataTypeKvMapping["tv-show"]
+      ? ItemTvShow
+      : never,
+>({
   data,
-  dataType = "movie",
+  dataType,
 }: {
   data:
     | GetMoviesNowPlayingResult
@@ -34,7 +46,7 @@ export const usePreprocessData = <Item extends ItemMovie | ItemTvShow>({
     | GetTvShowsOnTheAirResult
     | null
     | undefined;
-  dataType?: "movie" | "tv-show";
+  dataType: T;
 }) => {
   const bannerMovieImageSrcPathSegment =
     data && data.results.length
@@ -67,19 +79,19 @@ export const usePreprocessData = <Item extends ItemMovie | ItemTvShow>({
     }
 
     if (dataType === "movie") {
-      return data.results.map((movieOrTvShow) => {
+      return (data.results as Movie[]).map((movieOrTvShow) => {
         return {
           ...movieOrTvShow,
           id: movieOrTvShow.id.toString(),
-        };
+        } satisfies ItemMovie;
       });
     } else if (dataType === "tv-show") {
-      return data.results.map((movieOrTvShow) => {
+      return (data.results as TvShow[]).map((movieOrTvShow) => {
         return {
           ...movieOrTvShow,
           id: movieOrTvShow.id.toString(),
-          title: (movieOrTvShow as TvShow).name,
-        };
+          title: movieOrTvShow.name,
+        } satisfies ItemTvShow;
       });
     } else {
       return [];
@@ -89,6 +101,6 @@ export const usePreprocessData = <Item extends ItemMovie | ItemTvShow>({
   return {
     bannerMovieImageSrc,
     images,
-    items: items as unknown as Item[],
+    items: items as Item[],
   };
 };

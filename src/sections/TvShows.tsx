@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useMedia } from "react-use";
 import { Carousel, OnOpenItem } from "@/components/Carousel";
-import { ItemMovie, usePreprocessData } from "@/hooks/usePreprocessData";
+import { usePreprocessData } from "@/hooks/usePreprocessData";
 import {
   BASE_PATH,
   getTvShowsAiringToday,
@@ -86,28 +86,25 @@ export function TvShows() {
     bannerMovieImageSrc,
     images: imagesAiringToday,
     items: itemsAiringToday,
-  } = usePreprocessData<ItemMovie>({
+  } = usePreprocessData({
     data: dataAiringToday,
     dataType: "tv-show",
   });
 
-  const { images: imagesOnTheAir, items: itemsOnTheAir } =
-    usePreprocessData<ItemMovie>({
-      data: dataOnTheAir,
-      dataType: "tv-show",
-    });
+  const { images: imagesOnTheAir, items: itemsOnTheAir } = usePreprocessData({
+    data: dataOnTheAir,
+    dataType: "tv-show",
+  });
 
-  const { images: imagesPopular, items: itemsPopular } =
-    usePreprocessData<ItemMovie>({
-      data: dataPopular,
-      dataType: "tv-show",
-    });
+  const { images: imagesPopular, items: itemsPopular } = usePreprocessData({
+    data: dataPopular,
+    dataType: "tv-show",
+  });
 
-  const { images: imagesTopRated, items: itemsTopRated } =
-    usePreprocessData<ItemMovie>({
-      data: dataTopRated,
-      dataType: "tv-show",
-    });
+  const { images: imagesTopRated, items: itemsTopRated } = usePreprocessData({
+    data: dataTopRated,
+    dataType: "tv-show",
+  });
 
   const banner = useMemo(() => {
     return !!dataAiringToday?.results.length ? (

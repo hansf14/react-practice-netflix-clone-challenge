@@ -564,11 +564,11 @@ export const Carousel = withMemoAndRef<"div", HTMLDivElement, CarouselProps>({
     const onHoverStart = useCallback(
       ({ index }: { index: number }) =>
         () => {
-          console.log("[onPointerEnter]");
+          // console.log("[onPointerEnter]");
           if (!stateIsScrolling) {
             seStateHoveredIndex(index);
           }
-          console.log(index);
+          // console.log(index);
         },
       [stateIsScrolling],
     );

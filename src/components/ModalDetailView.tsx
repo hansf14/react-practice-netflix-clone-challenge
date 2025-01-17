@@ -27,11 +27,7 @@ import {
 } from "@/api";
 import netflixInitialLogo from "@/assets/netflix-initial-logo.png";
 import { loadImage } from "@/hooks/useLoadImage";
-import {
-  ItemMovie,
-  ItemTvShow,
-  usePreprocessData,
-} from "@/hooks/usePreprocessData";
+import { usePreprocessData } from "@/hooks/usePreprocessData";
 import { Error as ErrorComponent } from "@/components/Error";
 import { Loader } from "@/components/Loader";
 import { Error404 } from "@/components/Error404";
@@ -458,19 +454,25 @@ export const ModalDetailView = withMemoAndRef<
         : null;
 
     const { images: imagesMoviesSimilar, items: itemsMoviesSimilar } =
-      usePreprocessData<ItemMovie>({ data: moviesSimilarData });
+      usePreprocessData({
+        data: moviesSimilarData,
+        dataType: "movie",
+      });
 
     const { images: imagesMoviesRecommended, items: itemsMoviesRecommended } =
-      usePreprocessData<ItemMovie>({ data: moviesRecommendedData });
+      usePreprocessData({
+        data: moviesRecommendedData,
+        dataType: "movie",
+      });
 
     const { images: imagesTvShowsSimilar, items: itemsTvShowsSimilar } =
-      usePreprocessData<ItemTvShow>({
+      usePreprocessData({
         data: tvShowsSimilarData,
         dataType: "tv-show",
       });
 
     const { images: imagesTvShowsRecommended, items: itemsTvShowsRecommended } =
-      usePreprocessData<ItemTvShow>({
+      usePreprocessData({
         data: tvShowsRecommendedData,
         dataType: "tv-show",
       });
